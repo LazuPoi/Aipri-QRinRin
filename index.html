@@ -5,22 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>コーデ管理ページ</title>
     <style>
-        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; }
         h2 { color: #333; border-bottom: 2px solid #ff99cc; padding-bottom: 5px; }
         .container { background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
         input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { margin-top: 10px; padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        
+        /* ボタンのデザイン */
+        button { padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
         button:hover { background-color: #e64d7f; }
         
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-        .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        .card:hover { transform: translateY(-3px); }
-        .card img { width: 100%; height: auto; display: block; margin-bottom: 8px; border-radius: 4px; }
-        .tags { font-size: 0.85em; color: #666; line-height: 1.4; }
-        .coord-title { font-size: 1.1em; font-weight: bold; color: #333; display: block; margin-bottom: 4px; }
+        /* 削除ボタン（赤） */
+        .btn-delete { background-color: #ccc; font-size: 0.8em; padding: 5px; margin-top: 5px; color: #333; }
+        .btn-delete:hover { background-color: #ff4444; color: white; }
+
+        /* もっと見るボタン */
+        #loadMoreBtn { background-color: #66ccff; margin-top: 20px; display: none; }
+        #loadMoreBtn:hover { background-color: #4db8e8; }
+
+        /* ギャラリー（一覧）のデザイン */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         
+        /* 画像の統一感（2:3比率） */
+        .img-container {
+            width: 100%;
+            aspect-ratio: 2 / 3; /* 横2:縦3 */
+            overflow: hidden;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: zoom-in; /* クリックできることを示す */
+            background-color: #f0f0f0;
+        }
+        .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 枠いっぱいにトリミングして表示 */
+            transition: transform 0.3s;
+        }
+        .img-container:hover img { transform: scale(1.05); }
+
+        .tags { font-size: 0.85em; color: #666; line-height: 1.4; flex-grow: 1; }
+        .coord-title { font-size: 1.1em; font-weight: bold; color: #333; display: block; margin-bottom: 4px; }
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
+
+        /* 拡大表示（モーダル） */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal img { max-width: 90%; max-height: 90%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
+
     </style>
 </head>
 <body>
@@ -28,16 +61,13 @@
     <h2>画像アップロード</h2>
     <div class="container">
         <input type="file" id="fileInput" accept="image/*">
-        
         <select id="typeSelect">
-            <option value="" disabled selected>画像の種類</option>
+            <option value="" disabled selected>種類を選択 (必須)</option>
             <option value="コーデ">コーデ</option>
             <option value="フレカ">フレカ</option>
             <option value="チャンスQR">チャンスQR</option>
         </select>
-
         <input type="text" id="coordName" placeholder="コーデ名 (必須)">
-
         <select id="nameSelect">
             <option value="りんりん">りんりん</option>
             <option value="るぺるかりあ">るぺるかりあ</option>
@@ -48,9 +78,8 @@
             <option value="るとさなりあ">るとさなりあ</option>
             <option value="その他">その他</option>
         </select>
-
         <button onclick="uploadImage()">アップロード</button>
-        <p id="statusMsg" class="loading">アップロード中...</p>
+        <p id="statusMsg" class="loading">処理中...</p>
     </div>
 
     <h2>検索・一覧</h2>
@@ -58,15 +87,21 @@
         <input type="text" id="searchInput" placeholder="検索 (コーデ名、種類、なまえ)..." oninput="filterImages()">
     </div>
 
-    <div id="gallery" class="gallery">
-        </div>
+    <div id="gallery" class="gallery"></div>
+    
+    <button id="loadMoreBtn" onclick="showMoreImages()">もっと見る (+10枚)</button>
+
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="modal-close">&times;</span>
+        <img id="modalImg">
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // ▼▼▼ あなたのキー情報 ▼▼▼
+        // ▼▼▼ あなたのキー情報に書き換えてください ▼▼▼
         const firebaseConfig = {
           apiKey: "AIzaSyD0KuN_xxHp4p36s5jH3QVfpcpVaEWRUEA",
           authDomain: "aipri-qrinrin.firebaseapp.com",
@@ -78,14 +113,15 @@
         };
         // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
-        // Firebase初期化
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        let allImages = [];
+        let allImages = []; // 全データ
+        let filteredImages = []; // 検索結果データ
+        let displayLimit = 5; // 現在表示する枚数（初期5枚）
 
-        // アップロード機能
+        // ■■ アップロード機能 ■■
         window.uploadImage = async () => {
             const file = document.getElementById('fileInput').files[0];
             const type = document.getElementById('typeSelect').value;
@@ -100,12 +136,12 @@
             document.getElementById('statusMsg').style.display = 'block';
 
             try {
-                // 1. 画像をStorageに保存
+                // 1. Storageへ保存
                 const storageRef = ref(storage, 'images/' + new Date().getTime() + '_' + file.name);
                 await uploadBytes(storageRef, file);
                 const url = await getDownloadURL(storageRef);
 
-                // 2. 情報をFirestoreに保存
+                // 2. Firestoreへ保存
                 await addDoc(collection(db, "coords"), {
                     imageUrl: url,
                     type: type,
@@ -118,62 +154,125 @@
                 location.reload(); 
             } catch (e) {
                 console.error("Error:", e);
-                alert("エラーが発生しました。コンソール(F12)を確認してください。\n詳細: " + e.message);
+                alert("エラー: " + e.message);
             } finally {
                 document.getElementById('statusMsg').style.display = 'none';
             }
         };
 
-        // 一覧取得機能
+        // ■■ 削除機能 ■■
+        window.deleteItem = async (id, imageUrl) => {
+            if (!confirm("本当にこの画像を削除しますか？\n（元に戻せません）")) return;
+
+            document.getElementById('statusMsg').innerText = "削除中...";
+            document.getElementById('statusMsg').style.display = 'block';
+
+            try {
+                // 1. Firestoreから削除
+                await deleteDoc(doc(db, "coords", id));
+
+                // 2. Storageから削除（URLから参照を作成して削除）
+                const imageRef = ref(storage, imageUrl);
+                await deleteObject(imageRef).catch(e => {
+                    console.warn("画像ファイルが見つからないか、すでに削除されています", e);
+                });
+
+                alert("削除しました");
+                location.reload();
+            } catch (e) {
+                console.error("削除エラー:", e);
+                alert("削除に失敗しました: " + e.message);
+                document.getElementById('statusMsg').style.display = 'none';
+            }
+        };
+
+        // ■■ 読み込み・表示機能 ■■
         async function loadImages() {
             try {
                 const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
                 
                 allImages = [];
-                querySnapshot.forEach((doc) => {
-                    allImages.push(doc.data());
+                querySnapshot.forEach((docSnap) => {
+                    // IDを含めてデータを保存
+                    const data = docSnap.data();
+                    data.id = docSnap.id; 
+                    allImages.push(data);
                 });
-                renderGallery(allImages);
+                
+                filteredImages = allImages; // 最初は全件
+                renderGallery();
             } catch (e) {
                 console.error("読み込みエラー:", e);
-                // データが空の時はエラーっぽく見えることがあるので何もしない
             }
         }
 
-        // 表示機能
-        function renderGallery(images) {
+        // 画面描画
+        function renderGallery() {
             const gallery = document.getElementById('gallery');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
             gallery.innerHTML = "";
 
-            images.forEach(item => {
+            // 表示上限まで切り出す
+            const visibleItems = filteredImages.slice(0, displayLimit);
+
+            visibleItems.forEach(item => {
                 const card = document.createElement('div');
                 card.className = "card";
                 
-                // 画像URLの互換性チェック
                 let imgSrc = item.imageUrl ? item.imageUrl : item.imageBase64;
 
                 card.innerHTML = `
-                    <img src="${imgSrc}" loading="lazy">
+                    <div class="img-container" onclick="openModal('${imgSrc}')">
+                        <img src="${imgSrc}" loading="lazy" alt="${item.coordName}">
+                    </div>
                     <div class="tags">
                         <span class="coord-title">${item.coordName}</span>
                         種類: ${item.type}<br>
                         なまえ: ${item.name}
                     </div>
+                    <button class="btn-delete" onclick="deleteItem('${item.id}', '${imgSrc}')">削除</button>
                 `;
                 gallery.appendChild(card);
             });
+
+            // 「もっと見る」ボタンの表示制御
+            if (filteredImages.length > displayLimit) {
+                loadMoreBtn.style.display = "block";
+                loadMoreBtn.innerText = `もっと見る (残り ${filteredImages.length - displayLimit}枚)`;
+            } else {
+                loadMoreBtn.style.display = "none";
+            }
         }
+
+        // もっと見るボタンを押した時
+        window.showMoreImages = () => {
+            displayLimit += 10;
+            renderGallery();
+        };
 
         // 検索機能
         window.filterImages = () => {
             const term = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allImages.filter(item => {
+            filteredImages = allImages.filter(item => {
                 return item.type.includes(term) || 
                        item.coordName.toLowerCase().includes(term) || 
                        item.name.includes(term);
             });
-            renderGallery(filtered);
+            displayLimit = 5; // 検索時は表示数をリセット
+            renderGallery();
+        };
+
+        // ■■ モーダル（拡大表示）機能 ■■
+        window.openModal = (src) => {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImg');
+            modal.style.display = "flex";
+            modalImg.src = src;
+        };
+
+        window.closeModal = () => {
+            document.getElementById('imageModal').style.display = "none";
         };
 
         loadImages();
