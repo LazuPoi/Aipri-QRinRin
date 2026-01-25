@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コーデ管理ページ</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; }
+        h2 { color: #333; border-bottom: 2px solid #ff99cc; padding-bottom: 5px; }
+        .container { background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { margin-top: 10px; padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #e64d7f; }
+        
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-3px); }
+        .card img { width: 100%; height: auto; display: block; margin-bottom: 8px; border-radius: 4px; }
+        .tags { font-size: 0.85em; color: #666; line-height: 1.4; }
+        .coord-title { font-size: 1.1em; font-weight: bold; color: #333; display: block; margin-bottom: 4px; }
+        
+        .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>画像アップロード</h2>
+    <div class="container">
+        <input type="file" id="fileInput" accept="image/*">
+        
+        <select id="typeSelect">
+            <option value="" disabled selected>種類を選択 (必須)</option>
+            <option value="フレカ">フレカ</option>
+            <option value="チャンスQR">チャンスQR</option>
+            <option value="コーデ">コーデ</option>
+        </select>
+
+        <input type="text" id="coordName" placeholder="コーデ名 (必須)">
+
+        <select id="nameSelect">
+            <option value="その他">なまえ (任意・デフォルトその他)</option>
+            <option value="りんりん">りんりん</option>
+            <option value="るぺるかりあ">るぺるかりあ</option>
+            <option value="らんらん">らんらん</option>
+            <option value="るんるん">るんるん</option>
+            <option value="れんれん">れんれん</option>
+            <option value="ろんろん">ろんろん</option>
+            <option value="るとさなりあ">るとさなりあ</option>
+            <option value="その他">その他</option>
+        </select>
+
+        <button onclick="uploadImage()">アップロード</button>
+        <p id="statusMsg" class="loading">アップロード中...</p>
+    </div>
+
+    <h2>検索・一覧</h2>
+    <div class="container" style="padding: 10px;">
+        <input type="text" id="searchInput" placeholder="検索 (コーデ名、種類、なまえ)..." oninput="filterImages()">
+    </div>
+
+    <div id="gallery" class="gallery">
+        </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // ▼▼▼ あなたのキー情報 ▼▼▼
+        const firebaseConfig = {
+          apiKey: "AIzaSyD0KuN_xxHp4p36s5jH3QVfpcpVaEWRUEA",
+          authDomain: "aipri-qrinrin.firebaseapp.com",
+          projectId: "aipri-qrinrin",
+          storageBucket: "aipri-qrinrin.firebasestorage.app",
+          messagingSenderId: "770009778959",
+          appId: "1:770009778959:web:fdb1188463f5bfdecb8c7a",
+          measurementId: "G-DQR6RGHTK7"
+        };
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+        // Firebase初期化
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let allImages = [];
+
+        // アップロード機能
+        window.uploadImage = async () => {
+            const file = document.getElementById('fileInput').files[0];
+            const type = document.getElementById('typeSelect').value;
+            const coordName = document.getElementById('coordName').value;
+            const name = document.getElementById('nameSelect').value;
+
+            if (!file || !type || !coordName) {
+                alert("画像、種類、コーデ名は必須です！");
+                return;
+            }
+
+            document.getElementById('statusMsg').style.display = 'block';
+
+            try {
+                // 1. 画像をStorageに保存
+                const storageRef = ref(storage, 'images/' + new Date().getTime() + '_' + file.name);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+
+                // 2. 情報をFirestoreに保存
+                await addDoc(collection(db, "coords"), {
+                    imageUrl: url,
+                    type: type,
+                    coordName: coordName,
+                    name: name,
+                    createdAt: new Date()
+                });
+
+                alert("保存しました！");
+                location.reload(); 
+            } catch (e) {
+                console.error("Error:", e);
+                alert("エラーが発生しました。コンソール(F12)を確認してください。\n詳細: " + e.message);
+            } finally {
+                document.getElementById('statusMsg').style.display = 'none';
+            }
+        };
+
+        // 一覧取得機能
+        async function loadImages() {
+            try {
+                const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                allImages = [];
+                querySnapshot.forEach((doc) => {
+                    allImages.push(doc.data());
+                });
+                renderGallery(allImages);
+            } catch (e) {
+                console.error("読み込みエラー:", e);
+                // データが空の時はエラーっぽく見えることがあるので何もしない
+            }
+        }
+
+        // 表示機能
+        function renderGallery(images) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = "";
+
+            images.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "card";
+                
+                // 画像URLの互換性チェック
+                let imgSrc = item.imageUrl ? item.imageUrl : item.imageBase64;
+
+                card.innerHTML = `
+                    <img src="${imgSrc}" loading="lazy">
+                    <div class="tags">
+                        <span class="coord-title">${item.coordName}</span>
+                        種類: ${item.type}<br>
+                        なまえ: ${item.name}
+                    </div>
+                `;
+                gallery.appendChild(card);
+            });
+        }
+
+        // 検索機能
+        window.filterImages = () => {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allImages.filter(item => {
+                return item.type.includes(term) || 
+                       item.coordName.toLowerCase().includes(term) || 
+                       item.name.includes(term);
+            });
+            renderGallery(filtered);
+        };
+
+        loadImages();
+    </script>
+</body>
+</html>
