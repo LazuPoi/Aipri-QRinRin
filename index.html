@@ -5,96 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>コーデ管理ページ</title>
     <style>
-        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; }
-        h2 { color: #333; border-bottom: 2px solid #ff99cc; padding-bottom: 5px; }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
+        
+        /* ■ タブナビゲーション ■ */
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #555; transition: 0.3s; }
+        .tab-btn.active { background: #ff6699; color: white; }
+        
+        /* ページ切り替え */
+        .page-section { display: none; }
+        .page-section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { color: #333; border-bottom: 2px solid #ff99cc; padding-bottom: 5px; margin-top: 0; }
         .container { background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
         input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         label { font-size: 0.9em; font-weight: bold; color: #555; display: block; margin-top: 10px; margin-bottom: -5px;}
-
-        /* アップロードボタン */
-        .btn-upload { padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
-        .btn-upload:hover { background-color: #e64d7f; }
         
-        /* 削除ボタン（赤） */
-        .btn-delete { background-color: #ccc; font-size: 0.8em; padding: 5px; margin-top: 5px; width: 100%; border: none; border-radius: 4px; color: #333; cursor: pointer; }
-        .btn-delete:hover { background-color: #ff4444; color: white; }
+        /* 必須・任意バッジ */
+        .badge-req { color: #ff4444; font-size: 0.8em; margin-left: 5px; }
+        .badge-any { color: #888; font-size: 0.8em; margin-left: 5px; }
 
-        /* もっと見るボタン */
-        #loadMoreBtn { background-color: #66ccff; margin-top: 20px; width: 100%; padding: 12px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; display: none; }
-        #loadMoreBtn:hover { background-color: #4db8e8; }
+        /* ボタン類 */
+        .btn-main { padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
+        .btn-main:hover { background-color: #e64d7f; }
+        .btn-sub { background-color: #66ccff; margin-top: 20px; width: 100%; padding: 12px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
 
         /* フィルターボタン群 */
-        .filter-group { display: flex; gap: 5px; margin-bottom: 10px; }
-        .filter-btn { flex: 1; padding: 10px; border: 1px solid #ff99cc; background-color: #fff; color: #ff6699; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .filter-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .filter-group { display: flex; gap: 5px; flex-wrap: wrap; }
+        .filter-btn { flex: 1; padding: 8px; border: 1px solid #ff99cc; background-color: #fff; color: #ff6699; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; min-width: 60px; }
         .filter-btn.active { background-color: #ff6699; color: white; }
-        .filter-btn:hover { background-color: #ffe6f0; }
-        .filter-btn.active:hover { background-color: #e64d7f; }
-
-        /* ギャラリー（一覧）のデザイン */
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
-        .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         
-        /* 画像の統一感（2:3比率） */
+        /* お気に入りフィルターボタン */
+        .fav-filter-btn { width: 100%; background: #fff; border: 2px solid #ffd700; color: #d4af37; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .fav-filter-btn.active { background: #ffd700; color: #fff; }
+
+        /* カードデザイン */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; }
+        
         .img-container {
-            width: 100%;
-            aspect-ratio: 2 / 3;
-            overflow: hidden;
-            border-radius: 4px;
-            margin-bottom: 8px;
-            cursor: zoom-in;
-            background-color: #f0f0f0;
+            width: 100%; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 4px; margin-bottom: 8px; cursor: zoom-in; background-color: #f0f0f0; position: relative;
         }
-        .img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s;
-        }
-        .img-container:hover img { transform: scale(1.05); }
+        .img-container img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* 複数枚ある時のインジケーター */
+        .multi-icon { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; pointer-events: none; }
 
-        .tags { font-size: 0.8em; color: #666; line-height: 1.5; flex-grow: 1; }
-        .coord-title { font-size: 1.1em; font-weight: bold; color: #333; display: block; margin-bottom: 4px; border-bottom: 1px dashed #ddd; padding-bottom: 2px;}
-        .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
+        .tags { font-size: 0.75em; color: #666; line-height: 1.4; flex-grow: 1; }
+        .coord-title { font-size: 1.1em; font-weight: bold; color: #333; display: block; margin-bottom: 4px; border-bottom: 1px dashed #ddd; padding-bottom: 2px; }
+        .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; margin-bottom: 4px; font-weight: bold; }
+        .status-comp { background: #e6fffa; color: #00a0a0; border: 1px solid #00a0a0; }
+        .status-notcomp { background: #fff5f5; color: #e53e3e; border: 1px solid #e53e3e; }
 
-        /* 拡大表示（モーダル） */
+        /* カード内のアクションボタン */
+        .card-actions { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-card { flex: 1; padding: 6px; font-size: 0.8em; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        .btn-edit { background-color: #ffa500; }
+        .btn-delete { background-color: #ccc; color: #333; }
+        
+        /* お気に入りスター */
+        .fav-star { position: absolute; top: 5px; right: 5px; font-size: 24px; color: #ddd; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 5; transition: transform 0.2s; }
+        .fav-star:hover { transform: scale(1.2); }
+        .fav-star.active { color: #ffd700; }
+
+        /* ■ モーダル（拡大・編集） ■ */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-        .modal img { max-width: 90%; max-height: 90%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
+        .modal-content { background: #fff; padding: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
+        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
+        
+        /* 拡大画像の並び */
+        .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .modal-imgs img { max-width: 100%; border-radius: 4px; }
+
+        /* 編集フォームの非表示制御クラス */
+        .hidden-field { display: none; }
+        .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
 
     </style>
 </head>
 <body>
 
-    <h2>画像アップロード</h2>
-    <div class="container">
-        <label>画像</label>
-        <input type="file" id="fileInput" accept="image/*">
-        
-        <label>種類</label>
-        <select id="typeSelect">
-            <option value="コーデ" selected>コーデ</option>
-            <option value="フレカ">フレカ</option>
-            <option value="チャンスQR">チャンスQR</option>
-        </select>
+    <nav class="tab-nav">
+        <button class="tab-btn" onclick="switchTab('register')" id="tabBtn-register">➕ 登録</button>
+        <button class="tab-btn active" onclick="switchTab('list')" id="tabBtn-list">🖼️ 一覧</button>
+    </nav>
 
-        <label>コーデ名</label>
-        <input type="text" id="coordName" placeholder="入力してください">
+    <section id="page-register" class="page-section">
+        <h2>新規登録</h2>
+        <div class="container">
+            <label>画像 (最大4枚) <span class="badge-req">必須</span></label>
+            <input type="file" id="fileInput" accept="image/*" multiple>
+            <small style="color:#888;">※Ctrlキーを押しながらクリックで複数選択できます</small>
 
-        <label>なまえ</label>
-        <select id="nameSelect">
-            <option value="りんりん">りんりん</option>
-            <option value="るぺるかりあ">るぺるかりあ</option>
-            <option value="らんらん">らんらん</option>
-            <option value="るんるん">るんるん</option>
-            <option value="れんれん">れんれん</option>
-            <option value="ろんろん">ろんろん</option>
-            <option value="るとさなりあ">るとさなりあ</option>
-            <option value="その他">その他</option>
-        </select>
+            <label>種類 <span class="badge-req">必須</span></label>
+            <select id="typeSelect" onchange="handleTypeChange()">
+                <option value="コーデ" selected>コーデ</option>
+                <option value="フレカ">フレカ</option>
+                <option value="チャンスQR">チャンスQR</option>
+                <option value="セーブコード">セーブコード</option>
+            </select>
 
-        <label>ブランド名</label>
-        <select id="brandSelect">
+            <div id="standardFields">
+                <label>コーデ名 <span class="badge-req">必須</span></label>
+                <input type="text" id="coordName" placeholder="入力してください">
+
+                <label>なまえ <span class="badge-req">必須</span></label>
+                <select id="nameSelect">
+                    <option value="りんりん">りんりん</option>
+                    <option value="るぺるかりあ">るぺるかりあ</option>
+                    <option value="らんらん">らんらん</option>
+                    <option value="るんるん">るんるん</option>
+                    <option value="れんれん">れんれん</option>
+                    <option value="ろんろん">ろんろん</option>
+                    <option value="るとさなりあ">るとさなりあ</option>
+                    <option value="その他">その他</option>
+                </select>
+
+                <label>ブランド名 <span class="badge-req">必須</span></label>
+                <select id="brandSelect">
             <option value="Poppin' Heart">💗Poppin' Heart</option>
             <option value="Miracle Moon">🌙Miracle Moon</option>
             <option value="Flower March">🍀︎Flower March</option>
@@ -108,58 +139,119 @@
             <option value="Princess Ring">💍Princess Ring</option>
             <option value="CUTIE CARAT">💎CUTIE CARAT</option>
             <option value="Future School">🚀Future School</option>
-            <option value="Pretty Collection">💝Pretty Collection</option>
-        </select>
+            <option value="Pretty Collection">💝Pretty Collection</option>                    <option value="その他">その他</option>
+                </select>
 
-        <label>弾数</label>
-        <select id="seriesSelect">
-            <option value="1だん">1だん</option>
-            <option value="2だん">2だん</option>
-            <option value="3だん">3だん</option>
-            <option value="4だん">4だん</option>
-            <option value="5だん">5だん</option>
-            <option value="6だん">6だん</option>
-            <option value="6だんP">6だんP</option>
-            <option value="リング1だん">リング1だん</option>
-            <option value="リング2だん">リング2だん</option>
-            <option value="リング3だん">リング3だん</option>
-            <option value="リング4だん">リング4だん</option>
-            <option value="リング5だん">リング5だん</option>
-            <option value="リング6だん">リング6だん</option>
-            <option value="その他">その他</option>
-        </select>
+                <label>弾数 <span class="badge-req">必須</span></label>
+                <select id="seriesSelect">
+                    <option value="1だん">1だん</option>
+                    <option value="2だん">2だん</option>
+                    <option value="3だん">3だん</option>
+                    <option value="4だん">4だん</option>
+                    <option value="5だん">5だん</option>
+                    <option value="6だん">6だん</option>
+                    <option value="6だんP">6だんP</option>
+                    <option value="リング1だん">リング1だん</option>
+                    <option value="リング2だん">リング2だん</option>
+                    <option value="リング3だん">リング3だん</option>
+                    <option value="リング4だん">リング4だん</option>
+                    <option value="リング5だん">リング5だん</option>
+                    <option value="リング6だん">リング6だん</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
 
-        <button class="btn-upload" onclick="uploadImage()">アップロード</button>
-        <p id="statusMsg" class="loading">処理中...</p>
-    </div>
+            <div id="statusField">
+                <label>状況 <span class="badge-req">必須(コーデのみ)</span></label>
+                <select id="statusSelect">
+                    <option value="未コンプ">未コンプ</option>
+                    <option value="コンプ">コンプ</option>
+                </select>
+            </div>
 
-    <h2>検索・一覧</h2>
-    <div class="container" style="padding: 10px;">
-        <div class="filter-group">
-            <button class="filter-btn active" onclick="setFilterType('all', this)">すべて</button>
-            <button class="filter-btn" onclick="setFilterType('コーデ', this)">コーデ</button>
-            <button class="filter-btn" onclick="setFilterType('フレカ', this)">フレカ</button>
-            <button class="filter-btn" onclick="setFilterType('チャンスQR', this)">チャンス</button>
+            <button class="btn-main" onclick="uploadImage()">アップロード</button>
+            <p id="statusMsg" class="loading">画像を処理中...</p>
+        </div>
+    </section>
+
+
+    <section id="page-list" class="page-section active">
+        <h2>検索・一覧</h2>
+        <div class="container" style="padding: 10px;">
+            <div class="filter-container">
+                <button id="favFilterBtn" class="fav-filter-btn" onclick="toggleFavFilter()">
+                    ★ お気に入りのみ表示
+                </button>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="setFilterType('all', this)">すべて</button>
+                    <button class="filter-btn" onclick="setFilterType('コーデ', this)">コーデ</button>
+                    <button class="filter-btn" onclick="setFilterType('フレカ', this)">フレカ</button>
+                    <button class="filter-btn" onclick="setFilterType('チャンスQR', this)">チャンス</button>
+                    <button class="filter-btn" onclick="setFilterType('セーブコード', this)">セーブ</button>
+                </div>
+            </div>
+
+            <input type="text" id="searchInput" placeholder="検索 (コーデ名、なまえ、ブランド、弾数)..." oninput="filterImages()">
         </div>
 
-        <input type="text" id="searchInput" placeholder="検索 (コーデ名、なまえ、ブランド、弾数)..." oninput="filterImages()">
+        <div id="gallery" class="gallery"></div>
+        <button id="loadMoreBtn" class="btn-sub" onclick="showMoreImages()" style="display:none;">もっと見る</button>
+    </section>
+
+
+    <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content" style="background:transparent; box-shadow:none; max-width:800px;">
+            <span class="modal-close" style="color:white; top:-10px; right:-10px;" onclick="closeModal()">&times;</span>
+            <div id="modalImgs" class="modal-imgs"></div>
+        </div>
     </div>
 
-    <div id="gallery" class="gallery"></div>
-    
-    <button id="loadMoreBtn" onclick="showMoreImages()">もっと見る (+10枚)</button>
+    <div id="editModal" class="modal" onclick="if(event.target === this) closeEditModal()">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            <h3 style="margin-top:0;">情報を編集</h3>
+            
+            <input type="hidden" id="editDocId">
+            
+            <label>種類</label>
+            <select id="editType" onchange="handleEditTypeChange()">
+                <option value="コーデ">コーデ</option>
+                <option value="フレカ">フレカ</option>
+                <option value="チャンスQR">チャンスQR</option>
+                <option value="セーブコード">セーブコード</option>
+            </select>
 
-    <div id="imageModal" class="modal" onclick="closeModal()">
-        <span class="modal-close">&times;</span>
-        <img id="modalImg">
+            <div id="editStandardFields">
+                <label>コーデ名</label>
+                <input type="text" id="editName">
+                <label>なまえ</label>
+                <select id="editOwner">
+                    </select>
+                <label>ブランド</label>
+                <select id="editBrand"></select>
+                <label>弾数</label>
+                <select id="editSeries"></select>
+            </div>
+
+            <div id="editStatusField">
+                <label>状況</label>
+                <select id="editStatus">
+                    <option value="未コンプ">未コンプ</option>
+                    <option value="コンプ">コンプ</option>
+                </select>
+            </div>
+
+            <button class="btn-main" onclick="saveEdit()">保存する</button>
+        </div>
     </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // ▼▼▼ あなたのキー情報に書き換えてください ▼▼▼
+        // ▼▼▼ あなたのキー情報 ▼▼▼
         const firebaseConfig = {
           apiKey: "AIzaSyD0KuN_xxHp4p36s5jH3QVfpcpVaEWRUEA",
           authDomain: "aipri-qrinrin.firebaseapp.com",
@@ -175,22 +267,82 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        let allImages = []; // 全データ
-        let filteredImages = []; // 検索・フィルタ後のデータ
-        let displayLimit = 5; // 現在表示する枚数
-        let currentTypeFilter = 'all'; // 現在選択されている種類フィルター
+        let allImages = [];
+        let filteredImages = [];
+        let displayLimit = 5;
+        let currentTypeFilter = 'all';
+        let isFavFilterOn = false;
+
+        // ★初期化：編集モーダル用セレクトボックスにOptionをコピー
+        window.onload = () => {
+            // 初期表示用
+            handleTypeChange();
+            // 編集用Optionの複製
+            document.getElementById('editOwner').innerHTML = document.getElementById('nameSelect').innerHTML;
+            document.getElementById('editBrand').innerHTML = document.getElementById('brandSelect').innerHTML;
+            document.getElementById('editSeries').innerHTML = document.getElementById('seriesSelect').innerHTML;
+        };
+
+        // ■■ タブ切り替え ■■
+        window.switchTab = (tabName) => {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`page-${tabName}`).classList.add('active');
+            document.getElementById(`tabBtn-${tabName}`).classList.add('active');
+        };
+
+        // ■■ 入力制御：種類が変わった時の表示制御 ■■
+        window.handleTypeChange = () => {
+            const type = document.getElementById('typeSelect').value;
+            const standardFields = document.getElementById('standardFields');
+            const statusField = document.getElementById('statusField');
+
+            // 1. セーブコードの場合：詳細入力を隠す
+            if (type === 'セーブコード') {
+                standardFields.style.display = 'none';
+            } else {
+                standardFields.style.display = 'block';
+            }
+
+            // 2. コーデの場合：状況を表示
+            if (type === 'コーデ') {
+                statusField.style.display = 'block';
+            } else {
+                statusField.style.display = 'none';
+            }
+        };
 
         // ■■ アップロード機能 ■■
         window.uploadImage = async () => {
-            const file = document.getElementById('fileInput').files[0];
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            
             const type = document.getElementById('typeSelect').value;
-            const coordName = document.getElementById('coordName').value;
-            const name = document.getElementById('nameSelect').value;
-            const brand = document.getElementById('brandSelect').value;
-            const series = document.getElementById('seriesSelect').value;
+            let coordName = document.getElementById('coordName').value;
+            let name = document.getElementById('nameSelect').value;
+            let brand = document.getElementById('brandSelect').value;
+            let series = document.getElementById('seriesSelect').value;
+            let status = document.getElementById('statusSelect').value;
 
-            // バリデーション：すべて必須
-            if (!file || !type || !coordName || !name || !brand || !series) {
+            // バリデーション
+            if (files.length === 0) { alert("画像を選択してください"); return; }
+            if (files.length > 4) { alert("画像は最大4枚までです"); return; }
+            
+            // セーブコード時の値セット
+            if (type === 'セーブコード') {
+                coordName = "セーブコード";
+                brand = "-";
+                series = "-";
+                name = document.getElementById('nameSelect').value; // 所有者は残す
+                status = "-";
+            }
+            // コーデ以外の場合、statusは空
+            if (type !== 'コーデ') {
+                status = "-";
+            }
+
+            if (!coordName || !name || !brand || !series) {
                 alert("全選択肢を入力してください！");
                 return;
             }
@@ -198,19 +350,25 @@
             document.getElementById('statusMsg').style.display = 'block';
 
             try {
-                // 1. Storageへ保存
-                const storageRef = ref(storage, 'images/' + new Date().getTime() + '_' + file.name);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                // 複数画像のアップロード処理
+                const imageUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const storageRef = ref(storage, 'images/' + new Date().getTime() + '_' + i + '_' + file.name);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
+                    imageUrls.push(url);
+                }
 
-                // 2. Firestoreへ保存
+                // Firestore保存
                 await addDoc(collection(db, "coords"), {
-                    imageUrl: url,
+                    images: imageUrls, // 配列で保存
                     type: type,
                     coordName: coordName,
                     name: name,
                     brand: brand,
                     series: series,
+                    status: status, // 新規: 状況
                     createdAt: new Date()
                 });
 
@@ -224,99 +382,91 @@
             }
         };
 
-        // ■■ 削除機能 ■■
-        window.deleteItem = async (id, imageUrl) => {
-            if (!confirm("本当にこの画像を削除しますか？\n（元に戻せません）")) return;
-
-            // 簡易的なローディング表示（ボタンのテキストを変える）
-            const btn = event.target;
-            btn.innerText = "削除中...";
-            btn.disabled = true;
-
-            try {
-                await deleteDoc(doc(db, "coords", id));
-
-                const imageRef = ref(storage, imageUrl);
-                await deleteObject(imageRef).catch(e => {
-                    console.warn("画像削除エラー（無視します）:", e);
-                });
-
-                alert("削除しました");
-                location.reload();
-            } catch (e) {
-                console.error("削除エラー:", e);
-                alert("削除に失敗しました");
-                btn.innerText = "削除";
-                btn.disabled = false;
+        // ■■ お気に入り機能 (LocalStorage) ■■
+        // お気に入りIDリストの取得
+        function getFavList() {
+            const stored = localStorage.getItem('my_aipri_favs');
+            return stored ? JSON.parse(stored) : [];
+        }
+        // お気に入り切り替え
+        window.toggleFav = (id) => {
+            let favs = getFavList();
+            if (favs.includes(id)) {
+                favs = favs.filter(favId => favId !== id); // 削除
+            } else {
+                favs.push(id); // 追加
             }
+            localStorage.setItem('my_aipri_favs', JSON.stringify(favs));
+            
+            // 画面更新
+            renderGallery(); 
         };
 
-        // ■■ 読み込み機能 ■■
-        async function loadImages() {
-            try {
-                const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-                
-                allImages = [];
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    data.id = docSnap.id; 
-                    allImages.push(data);
-                });
-                
-                // 初回フィルタ実行
-                filterImages();
-            } catch (e) {
-                console.error("読み込みエラー:", e);
-            }
-        }
-
-        // ■■ フィルター切り替え機能 ■■
-        window.setFilterType = (type, btnElement) => {
-            // 状態更新
+        // ■■ フィルター機能 ■■
+        // 種類フィルター
+        window.setFilterType = (type, btn) => {
             currentTypeFilter = type;
-
-            // ボタンの見た目更新
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
-
-            // 検索実行
-            displayLimit = 5; // フィルタ変更時は表示数をリセット
+            document.querySelectorAll('.filter-container .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            displayLimit = 5;
+            filterImages();
+        };
+        // お気に入りフィルター
+        window.toggleFavFilter = () => {
+            isFavFilterOn = !isFavFilterOn;
+            const btn = document.getElementById('favFilterBtn');
+            if (isFavFilterOn) btn.classList.add('active');
+            else btn.classList.remove('active');
+            
+            displayLimit = 5;
             filterImages();
         };
 
-        // ■■ 検索・フィルタリングロジック ■■
+        // ■■ データ読み込み・検索・表示 ■■
+        async function loadImages() {
+            const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            allImages = [];
+            querySnapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                data.id = docSnap.id;
+                // 古いデータ対応：images配列がなければimageUrlを配列化
+                if (!data.images) {
+                    data.images = [data.imageUrl || data.imageBase64];
+                }
+                allImages.push(data);
+            });
+            filterImages();
+        }
+
         window.filterImages = () => {
             const term = document.getElementById('searchInput').value.toLowerCase();
-            
-            filteredImages = allImages.filter(item => {
-                // 1. 種類ボタンによるフィルタ
-                let typeMatch = false;
-                if (currentTypeFilter === 'all') {
-                    typeMatch = true;
-                } else {
-                    typeMatch = (item.type === currentTypeFilter);
-                }
+            const favs = getFavList();
 
-                // 2. 検索バーによるテキストフィルタ（種類は含めない）
-                // 古いデータにbrand/seriesが無い場合の対策として "|| ''" を追加
+            filteredImages = allImages.filter(item => {
+                // 1. お気に入りフィルター
+                if (isFavFilterOn && !favs.includes(item.id)) return false;
+
+                // 2. 種類フィルター
+                if (currentTypeFilter !== 'all' && item.type !== currentTypeFilter) return false;
+
+                // 3. テキスト検索
                 const textMatch = 
                     item.coordName.toLowerCase().includes(term) || 
                     item.name.includes(term) ||
                     (item.brand || '').includes(term) ||
                     (item.series || '').includes(term);
-
-                return typeMatch && textMatch;
+                
+                return textMatch;
             });
-
             renderGallery();
         };
 
-        // ■■ 描画機能 ■■
         function renderGallery() {
             const gallery = document.getElementById('gallery');
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             gallery.innerHTML = "";
+            const favs = getFavList();
 
             const visibleItems = filteredImages.slice(0, displayLimit);
 
@@ -324,24 +474,42 @@
                 const card = document.createElement('div');
                 card.className = "card";
                 
-                let imgSrc = item.imageUrl ? item.imageUrl : item.imageBase64;
+                // 画像（1枚目）
+                const thumbSrc = item.images[0];
+                const isMulti = item.images.length > 1;
+                const isFav = favs.includes(item.id);
 
-                // 表示用のデータ整形（古いデータ対策）
-                const brandDisp = item.brand ? `ブランド: ${item.brand}<br>` : "";
-                const seriesDisp = item.series ? `弾数: ${item.series}<br>` : "";
+                // 状況バッジ
+                let statusBadge = "";
+                if (item.type === 'コーデ' && item.status && item.status !== '-') {
+                    const cls = item.status === 'コンプ' ? 'status-comp' : 'status-notcomp';
+                    statusBadge = `<span class="status-badge ${cls}">${item.status}</span>`;
+                }
+                
+                // カードの中身
+                // JSON文字列化して渡す（クォート問題回避のためencodeURI使用）
+                const dataJson = encodeURIComponent(JSON.stringify(item));
 
                 card.innerHTML = `
-                    <div class="img-container" onclick="openModal('${imgSrc}')">
-                        <img src="${imgSrc}" loading="lazy" alt="${item.coordName}">
+                    <div class="fav-star ${isFav ? 'active' : ''}" onclick="toggleFav('${item.id}')">★</div>
+                    
+                    <div class="img-container" onclick="openModal('${dataJson}')">
+                        <img src="${thumbSrc}" loading="lazy">
+                        ${isMulti ? '<span class="multi-icon">複数枚</span>' : ''}
                     </div>
+
                     <div class="tags">
                         <span class="coord-title">${item.coordName}</span>
-                        なまえ: ${item.name}<br>
-                        種類: ${item.type}<br>
-                        ${brandDisp}
-                        ${seriesDisp}
+                        ${statusBadge}<br>
+                        種類: ${item.type} / ${item.name}<br>
+                        ${item.brand !== '-' ? item.brand : ''} 
+                        ${item.series !== '-' ? ' / ' + item.series : ''}
                     </div>
-                    <button class="btn-delete" onclick="deleteItem('${item.id}', '${imgSrc}')">削除</button>
+
+                    <div class="card-actions">
+                        <button class="btn-card btn-edit" onclick="openEditModal('${dataJson}')">編集</button>
+                        <button class="btn-card btn-delete" onclick="deleteItem('${item.id}')">削除</button>
+                    </div>
                 `;
                 gallery.appendChild(card);
             });
@@ -354,25 +522,98 @@
             }
         }
 
-        window.showMoreImages = () => {
-            displayLimit += 10;
-            renderGallery();
+        window.showMoreImages = () => { displayLimit += 10; renderGallery(); };
+
+        // ■■ 削除機能 ■■
+        window.deleteItem = async (id) => {
+            if (!confirm("削除しますか？")) return;
+            try {
+                // 画像削除は省略（Firestoreから消せば表示されなくなるため、簡易化）
+                await deleteDoc(doc(db, "coords", id));
+                alert("削除しました");
+                location.reload();
+            } catch (e) {
+                console.error(e);
+                alert("削除失敗");
+            }
         };
 
-        // ■■ モーダル機能 ■■
-        window.openModal = (src) => {
+        // ■■ モーダル（拡大） ■■
+        window.openModal = (encodedJson) => {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
             const modal = document.getElementById('imageModal');
-            const modalImg = document.getElementById('modalImg');
+            const container = document.getElementById('modalImgs');
+            
+            container.innerHTML = "";
+            item.images.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                container.appendChild(img);
+            });
             modal.style.display = "flex";
-            modalImg.src = src;
+        };
+        window.closeModal = () => { document.getElementById('imageModal').style.display = "none"; };
+
+        // ■■ 編集機能 ■■
+        window.openEditModal = (encodedJson) => {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            
+            document.getElementById('editDocId').value = item.id;
+            document.getElementById('editType').value = item.type;
+            document.getElementById('editName').value = item.coordName;
+            document.getElementById('editOwner').value = item.name;
+            document.getElementById('editBrand').value = item.brand;
+            document.getElementById('editSeries').value = item.series;
+            document.getElementById('editStatus').value = item.status || "未コンプ";
+
+            handleEditTypeChange(); // 表示制御
+            document.getElementById('editModal').style.display = "flex";
+        };
+        
+        window.closeEditModal = () => { document.getElementById('editModal').style.display = "none"; };
+
+        window.handleEditTypeChange = () => {
+            const type = document.getElementById('editType').value;
+            const fields = document.getElementById('editStandardFields');
+            const status = document.getElementById('editStatusField');
+
+            if (type === 'セーブコード') fields.style.display = 'none';
+            else fields.style.display = 'block';
+
+            if (type === 'コーデ') status.style.display = 'block';
+            else status.style.display = 'none';
         };
 
-        window.closeModal = () => {
-            document.getElementById('imageModal').style.display = "none";
+        window.saveEdit = async () => {
+            const id = document.getElementById('editDocId').value;
+            const type = document.getElementById('editType').value;
+            let coordName = document.getElementById('editName').value;
+            let brand = document.getElementById('editBrand').value;
+            let series = document.getElementById('editSeries').value;
+            const name = document.getElementById('editOwner').value;
+            let status = document.getElementById('editStatus').value;
+
+            if (type === 'セーブコード') {
+                coordName = "セーブコード";
+                brand = "-"; series = "-"; status = "-";
+            }
+            if (type !== 'コーデ') status = "-";
+
+            try {
+                await updateDoc(doc(db, "coords", id), {
+                    type, coordName, name, brand, series, status
+                });
+                alert("更新しました");
+                closeEditModal();
+                loadImages(); // 再読み込み
+            } catch (e) {
+                console.error(e);
+                alert("更新エラー");
+            }
         };
 
+        // 初期実行
         loadImages();
     </script>
 </body>
 </html>
-
