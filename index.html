@@ -7,7 +7,7 @@
     <style>
         body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
         
-        /* ■ タブナビゲーション ■ */
+        /* ■ タブナビゲーション（順序変更） ■ */
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #555; transition: 0.3s; }
         .tab-btn.active { background: #ff6699; color: white; }
@@ -25,17 +25,44 @@
         
         /* 必須・任意バッジ */
         .badge-req { color: #ff4444; font-size: 0.8em; margin-left: 5px; }
-        .badge-any { color: #888; font-size: 0.8em; margin-left: 5px; }
 
         /* ボタン類 */
         .btn-main { padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
         .btn-main:hover { background-color: #e64d7f; }
         .btn-sub { background-color: #66ccff; margin-top: 20px; width: 100%; padding: 12px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
 
-        /* フィルターボタン群 */
+        /* ■ フィルターボタン群（レイアウト調整） ■ */
         .filter-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .filter-group { display: flex; gap: 5px; flex-wrap: wrap; }
-        .filter-btn { flex: 1; padding: 8px; border: 1px solid #ff99cc; background-color: #fff; color: #ff6699; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; min-width: 60px; }
+        
+        /* グリッドレイアウト（スマホ用：上が1つ、下が4つ） */
+        .filter-group { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr 1fr; /* 4列 */
+            gap: 5px; 
+        }
+        .filter-btn { 
+            padding: 10px 5px; 
+            border: 1px solid #ff99cc; 
+            background-color: #fff; 
+            color: #ff6699; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 0.85em; 
+            text-align: center;
+        }
+        /* 1つ目のボタン（すべて）は全幅（4列分）使う */
+        .filter-btn:nth-child(1) {
+            grid-column: 1 / 5;
+        }
+
+        /* PCなど画面が広い時は横一列にする */
+        @media (min-width: 600px) {
+            .filter-group { display: flex; }
+            .filter-btn { flex: 1; }
+            .filter-btn:nth-child(1) { grid-column: auto; } /* グリッド解除 */
+        }
+
         .filter-btn.active { background-color: #ff6699; color: white; }
         
         /* お気に入りフィルターボタン */
@@ -51,7 +78,6 @@
         }
         .img-container img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* 複数枚ある時のインジケーター */
         .multi-icon { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; pointer-events: none; }
 
         .tags { font-size: 0.75em; color: #666; line-height: 1.4; flex-grow: 1; }
@@ -60,28 +86,21 @@
         .status-comp { background: #e6fffa; color: #00a0a0; border: 1px solid #00a0a0; }
         .status-notcomp { background: #fff5f5; color: #e53e3e; border: 1px solid #e53e3e; }
 
-        /* カード内のアクションボタン */
         .card-actions { display: flex; gap: 5px; margin-top: 8px; }
         .btn-card { flex: 1; padding: 6px; font-size: 0.8em; border: none; border-radius: 4px; cursor: pointer; color: white; }
         .btn-edit { background-color: #ffa500; }
         .btn-delete { background-color: #ccc; color: #333; }
         
-        /* お気に入りスター */
         .fav-star { position: absolute; top: 5px; right: 5px; font-size: 24px; color: #ddd; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 5; transition: transform 0.2s; }
         .fav-star:hover { transform: scale(1.2); }
         .fav-star.active { color: #ffd700; }
 
-        /* ■ モーダル（拡大・編集） ■ */
+        /* モーダル */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: #fff; padding: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
         .modal-close { position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
-        
-        /* 拡大画像の並び */
         .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .modal-imgs img { max-width: 100%; border-radius: 4px; }
-
-        /* 編集フォームの非表示制御クラス */
-        .hidden-field { display: none; }
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
 
     </style>
@@ -89,9 +108,33 @@
 <body>
 
     <nav class="tab-nav">
-        <button class="tab-btn" onclick="switchTab('register')" id="tabBtn-register">➕ 登録</button>
         <button class="tab-btn active" onclick="switchTab('list')" id="tabBtn-list">🖼️ 一覧</button>
+        <button class="tab-btn" onclick="switchTab('register')" id="tabBtn-register">➕ 登録</button>
     </nav>
+
+    <section id="page-list" class="page-section active">
+        <h2>検索・一覧</h2>
+        <div class="container" style="padding: 10px;">
+            <div class="filter-container">
+                <button id="favFilterBtn" class="fav-filter-btn" onclick="toggleFavFilter()">
+                    ★ お気に入りのみ表示
+                </button>
+                
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="setFilterType('all', this)">すべて</button>
+                    <button class="filter-btn" onclick="setFilterType('コーデ', this)">コーデ</button>
+                    <button class="filter-btn" onclick="setFilterType('フレカ', this)">フレカ</button>
+                    <button class="filter-btn" onclick="setFilterType('チャンスQR', this)">チャンス</button>
+                    <button class="filter-btn" onclick="setFilterType('セーブコード', this)">セーブ</button>
+                </div>
+            </div>
+
+            <input type="text" id="searchInput" placeholder="検索 (コーデ名、なまえ、ブランド、弾数)..." oninput="filterImages()">
+        </div>
+
+        <div id="gallery" class="gallery"></div>
+        <button id="loadMoreBtn" class="btn-sub" onclick="showMoreImages()" style="display:none;">もっと見る</button>
+    </section>
 
     <section id="page-register" class="page-section">
         <h2>新規登録</h2>
@@ -126,20 +169,21 @@
 
                 <label>ブランド名 <span class="badge-req">必須</span></label>
                 <select id="brandSelect">
-            <option value="Poppin' Heart">💗Poppin' Heart</option>
-            <option value="Miracle Moon">🌙Miracle Moon</option>
-            <option value="Flower March">🍀︎Flower March</option>
-            <option value="Scarlet Butterfly">🦋Scarlet Butterfly</option>
-            <option value="Rosession">🌹Rosession</option>
-            <option value="RAINBOW CANDY">🍬RAINBOW CANDY</option>
-            <option value="Bear Bear Bear">🐻Bear Bear Bear</option>
-            <option value="Love My Music">🎶Love My Music</option>
-            <option value="Prism Stone">💛Prism Stone</option>
-            <option value="Crystal Verse">✨Crystal Verse</option>
-            <option value="Princess Ring">💍Princess Ring</option>
-            <option value="CUTIE CARAT">💎CUTIE CARAT</option>
-            <option value="Future School">🚀Future School</option>
-            <option value="Pretty Collection">💝Pretty Collection</option>                    <option value="その他">その他</option>
+                    <option value="Poppin' Heart">💗Poppin' Heart</option>
+                    <option value="Miracle Moon">🌙Miracle Moon</option>
+                    <option value="Flower March">🍀︎Flower March</option>
+                    <option value="Scarlet Butterfly">🦋Scarlet Butterfly</option>
+                    <option value="Rosession">🌹Rosession</option>
+                    <option value="RAINBOW CANDY">🍬RAINBOW CANDY</option>
+                    <option value="Bear Bear Bear">🐻Bear Bear Bear</option>
+                    <option value="Love My Music">🎶Love My Music</option>
+                    <option value="Prism Stone">💛Prism Stone</option>
+                    <option value="Crystal Verse">✨Crystal Verse</option>
+                    <option value="Princess Ring">💍Princess Ring</option>
+                    <option value="CUTIE CARAT">💎CUTIE CARAT</option>
+                    <option value="Future School">🚀Future School</option>
+                    <option value="Pretty Collection">💝Pretty Collection</option>
+                    <option value="その他">その他</option>
                 </select>
 
                 <label>弾数 <span class="badge-req">必須</span></label>
@@ -174,31 +218,6 @@
         </div>
     </section>
 
-
-    <section id="page-list" class="page-section active">
-        <h2>検索・一覧</h2>
-        <div class="container" style="padding: 10px;">
-            <div class="filter-container">
-                <button id="favFilterBtn" class="fav-filter-btn" onclick="toggleFavFilter()">
-                    ★ お気に入りのみ表示
-                </button>
-                <div class="filter-group">
-                    <button class="filter-btn active" onclick="setFilterType('all', this)">すべて</button>
-                    <button class="filter-btn" onclick="setFilterType('コーデ', this)">コーデ</button>
-                    <button class="filter-btn" onclick="setFilterType('フレカ', this)">フレカ</button>
-                    <button class="filter-btn" onclick="setFilterType('チャンスQR', this)">チャンス</button>
-                    <button class="filter-btn" onclick="setFilterType('セーブコード', this)">セーブ</button>
-                </div>
-            </div>
-
-            <input type="text" id="searchInput" placeholder="検索 (コーデ名、なまえ、ブランド、弾数)..." oninput="filterImages()">
-        </div>
-
-        <div id="gallery" class="gallery"></div>
-        <button id="loadMoreBtn" class="btn-sub" onclick="showMoreImages()" style="display:none;">もっと見る</button>
-    </section>
-
-
     <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
         <div class="modal-content" style="background:transparent; box-shadow:none; max-width:800px;">
             <span class="modal-close" style="color:white; top:-10px; right:-10px;" onclick="closeModal()">&times;</span>
@@ -225,8 +244,7 @@
                 <label>コーデ名</label>
                 <input type="text" id="editName">
                 <label>なまえ</label>
-                <select id="editOwner">
-                    </select>
+                <select id="editOwner"></select>
                 <label>ブランド</label>
                 <select id="editBrand"></select>
                 <label>弾数</label>
@@ -273,9 +291,7 @@
         let currentTypeFilter = 'all';
         let isFavFilterOn = false;
 
-        // ★初期化：編集モーダル用セレクトボックスにOptionをコピー
         window.onload = () => {
-            // 初期表示用
             handleTypeChange();
             // 編集用Optionの複製
             document.getElementById('editOwner').innerHTML = document.getElementById('nameSelect').innerHTML;
@@ -283,7 +299,6 @@
             document.getElementById('editSeries').innerHTML = document.getElementById('seriesSelect').innerHTML;
         };
 
-        // ■■ タブ切り替え ■■
         window.switchTab = (tabName) => {
             document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -292,20 +307,16 @@
             document.getElementById(`tabBtn-${tabName}`).classList.add('active');
         };
 
-        // ■■ 入力制御：種類が変わった時の表示制御 ■■
         window.handleTypeChange = () => {
             const type = document.getElementById('typeSelect').value;
             const standardFields = document.getElementById('standardFields');
             const statusField = document.getElementById('statusField');
 
-            // 1. セーブコードの場合：詳細入力を隠す
             if (type === 'セーブコード') {
                 standardFields.style.display = 'none';
             } else {
                 standardFields.style.display = 'block';
             }
-
-            // 2. コーデの場合：状況を表示
             if (type === 'コーデ') {
                 statusField.style.display = 'block';
             } else {
@@ -313,7 +324,6 @@
             }
         };
 
-        // ■■ アップロード機能 ■■
         window.uploadImage = async () => {
             const fileInput = document.getElementById('fileInput');
             const files = fileInput.files;
@@ -325,20 +335,18 @@
             let series = document.getElementById('seriesSelect').value;
             let status = document.getElementById('statusSelect').value;
 
-            // バリデーション
             if (files.length === 0) { alert("画像を選択してください"); return; }
             if (files.length > 4) { alert("画像は最大4枚までです"); return; }
             
-            // セーブコード時の値セット
+            // 値の正規化（種類による強制上書き）
             if (type === 'セーブコード') {
                 coordName = "セーブコード";
                 brand = "-";
                 series = "-";
-                name = document.getElementById('nameSelect').value; // 所有者は残す
+                name = document.getElementById('nameSelect').value; 
                 status = "-";
-            }
-            // コーデ以外の場合、statusは空
-            if (type !== 'コーデ') {
+            } else if (type !== 'コーデ') {
+                // コーデ以外（フレカ、チャンスQR）なら状況は必ずハイフン
                 status = "-";
             }
 
@@ -350,7 +358,6 @@
             document.getElementById('statusMsg').style.display = 'block';
 
             try {
-                // 複数画像のアップロード処理
                 const imageUrls = [];
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
@@ -360,15 +367,14 @@
                     imageUrls.push(url);
                 }
 
-                // Firestore保存
                 await addDoc(collection(db, "coords"), {
-                    images: imageUrls, // 配列で保存
+                    images: imageUrls,
                     type: type,
                     coordName: coordName,
                     name: name,
                     brand: brand,
                     series: series,
-                    status: status, // 新規: 状況
+                    status: status, 
                     createdAt: new Date()
                 });
 
@@ -382,28 +388,21 @@
             }
         };
 
-        // ■■ お気に入り機能 (LocalStorage) ■■
-        // お気に入りIDリストの取得
         function getFavList() {
             const stored = localStorage.getItem('my_aipri_favs');
             return stored ? JSON.parse(stored) : [];
         }
-        // お気に入り切り替え
         window.toggleFav = (id) => {
             let favs = getFavList();
             if (favs.includes(id)) {
-                favs = favs.filter(favId => favId !== id); // 削除
+                favs = favs.filter(favId => favId !== id);
             } else {
-                favs.push(id); // 追加
+                favs.push(id);
             }
             localStorage.setItem('my_aipri_favs', JSON.stringify(favs));
-            
-            // 画面更新
             renderGallery(); 
         };
 
-        // ■■ フィルター機能 ■■
-        // 種類フィルター
         window.setFilterType = (type, btn) => {
             currentTypeFilter = type;
             document.querySelectorAll('.filter-container .filter-btn').forEach(b => b.classList.remove('active'));
@@ -411,18 +410,15 @@
             displayLimit = 5;
             filterImages();
         };
-        // お気に入りフィルター
         window.toggleFavFilter = () => {
             isFavFilterOn = !isFavFilterOn;
             const btn = document.getElementById('favFilterBtn');
             if (isFavFilterOn) btn.classList.add('active');
             else btn.classList.remove('active');
-            
             displayLimit = 5;
             filterImages();
         };
 
-        // ■■ データ読み込み・検索・表示 ■■
         async function loadImages() {
             const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
@@ -430,7 +426,6 @@
             querySnapshot.forEach(docSnap => {
                 const data = docSnap.data();
                 data.id = docSnap.id;
-                // 古いデータ対応：images配列がなければimageUrlを配列化
                 if (!data.images) {
                     data.images = [data.imageUrl || data.imageBase64];
                 }
@@ -444,13 +439,9 @@
             const favs = getFavList();
 
             filteredImages = allImages.filter(item => {
-                // 1. お気に入りフィルター
                 if (isFavFilterOn && !favs.includes(item.id)) return false;
-
-                // 2. 種類フィルター
                 if (currentTypeFilter !== 'all' && item.type !== currentTypeFilter) return false;
 
-                // 3. テキスト検索
                 const textMatch = 
                     item.coordName.toLowerCase().includes(term) || 
                     item.name.includes(term) ||
@@ -474,20 +465,16 @@
                 const card = document.createElement('div');
                 card.className = "card";
                 
-                // 画像（1枚目）
                 const thumbSrc = item.images[0];
                 const isMulti = item.images.length > 1;
                 const isFav = favs.includes(item.id);
 
-                // 状況バッジ
                 let statusBadge = "";
                 if (item.type === 'コーデ' && item.status && item.status !== '-') {
                     const cls = item.status === 'コンプ' ? 'status-comp' : 'status-notcomp';
                     statusBadge = `<span class="status-badge ${cls}">${item.status}</span>`;
                 }
                 
-                // カードの中身
-                // JSON文字列化して渡す（クォート問題回避のためencodeURI使用）
                 const dataJson = encodeURIComponent(JSON.stringify(item));
 
                 card.innerHTML = `
@@ -524,11 +511,9 @@
 
         window.showMoreImages = () => { displayLimit += 10; renderGallery(); };
 
-        // ■■ 削除機能 ■■
         window.deleteItem = async (id) => {
             if (!confirm("削除しますか？")) return;
             try {
-                // 画像削除は省略（Firestoreから消せば表示されなくなるため、簡易化）
                 await deleteDoc(doc(db, "coords", id));
                 alert("削除しました");
                 location.reload();
@@ -538,12 +523,10 @@
             }
         };
 
-        // ■■ モーダル（拡大） ■■
         window.openModal = (encodedJson) => {
             const item = JSON.parse(decodeURIComponent(encodedJson));
             const modal = document.getElementById('imageModal');
             const container = document.getElementById('modalImgs');
-            
             container.innerHTML = "";
             item.images.forEach(src => {
                 const img = document.createElement('img');
@@ -554,19 +537,17 @@
         };
         window.closeModal = () => { document.getElementById('imageModal').style.display = "none"; };
 
-        // ■■ 編集機能 ■■
         window.openEditModal = (encodedJson) => {
             const item = JSON.parse(decodeURIComponent(encodedJson));
-            
             document.getElementById('editDocId').value = item.id;
             document.getElementById('editType').value = item.type;
             document.getElementById('editName').value = item.coordName;
             document.getElementById('editOwner').value = item.name;
             document.getElementById('editBrand').value = item.brand;
             document.getElementById('editSeries').value = item.series;
-            document.getElementById('editStatus').value = item.status || "未コンプ";
+            document.getElementById('editStatus').value = (item.status && item.status !== '-') ? item.status : "未コンプ";
 
-            handleEditTypeChange(); // 表示制御
+            handleEditTypeChange();
             document.getElementById('editModal').style.display = "flex";
         };
         
@@ -593,11 +574,13 @@
             const name = document.getElementById('editOwner').value;
             let status = document.getElementById('editStatus').value;
 
+            // 編集時も「状況」のルールを適用
             if (type === 'セーブコード') {
                 coordName = "セーブコード";
                 brand = "-"; series = "-"; status = "-";
+            } else if (type !== 'コーデ') {
+                status = "-";
             }
-            if (type !== 'コーデ') status = "-";
 
             try {
                 await updateDoc(doc(db, "coords", id), {
@@ -605,14 +588,13 @@
                 });
                 alert("更新しました");
                 closeEditModal();
-                loadImages(); // 再読み込み
+                loadImages(); 
             } catch (e) {
                 console.error(e);
                 alert("更新エラー");
             }
         };
 
-        // 初期実行
         loadImages();
     </script>
 </body>
