@@ -33,10 +33,9 @@
         /* ■ フィルターボタン群 ■ */
         .filter-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         
-        /* グリッドレイアウト（スマホ用：上が1つ、下が4つ） */
         .filter-group { 
             display: grid; 
-            grid-template-columns: 1fr 1fr 1fr 1fr; /* 4列 */
+            grid-template-columns: 1fr 1fr 1fr 1fr; 
             gap: 5px; 
         }
         .filter-btn { 
@@ -50,7 +49,7 @@
             font-size: 0.85em; 
             text-align: center;
         }
-        .filter-btn:nth-child(1) { grid-column: 1 / 5; } /* 1つ目は全幅 */
+        .filter-btn:nth-child(1) { grid-column: 1 / 5; }
 
         @media (min-width: 600px) {
             .filter-group { display: flex; }
@@ -67,8 +66,9 @@
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
         .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; }
         
+        /* ■ 画像を正方形に変更 ■ */
         .img-container {
-            width: 100%; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 4px; margin-bottom: 8px; cursor: zoom-in; background-color: #f0f0f0; position: relative;
+            width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; margin-bottom: 8px; cursor: zoom-in; background-color: #f0f0f0; position: relative;
         }
         .img-container img { width: 100%; height: 100%; object-fit: cover; }
         
@@ -92,9 +92,24 @@
         /* モーダル */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         .modal-content { background: #fff; padding: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
-        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
         .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .modal-imgs img { max-width: 100%; border-radius: 4px; }
+        
+        /* ■ 閉じるボタンのデザイン追加 ■ */
+        .btn-modal-close { 
+            display: block; 
+            width: 33.33%; 
+            margin: 20px auto 0; 
+            padding: 12px; 
+            background-color: #ff6699; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            text-align: center; 
+        }
+        
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
 
     </style>
@@ -211,14 +226,13 @@
 
     <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
         <div class="modal-content" style="background:transparent; box-shadow:none; max-width:800px;">
-            <span class="modal-close" style="color:white; top:-10px; right:-10px;" onclick="closeModal()">&times;</span>
             <div id="modalImgs" class="modal-imgs"></div>
         </div>
     </div>
 
     <div id="editModal" class="modal" onclick="if(event.target === this) closeEditModal()">
         <div class="modal-content">
-            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            <span class="modal-close" style="position:absolute; top:10px; right:15px; font-size:28px; cursor:pointer;" onclick="closeEditModal()">&times;</span>
             <h3 style="margin-top:0;">情報を編集</h3>
             
             <input type="hidden" id="editDocId">
@@ -259,7 +273,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         // ▼▼▼ あなたのキー情報 ▼▼▼
         const firebaseConfig = {
@@ -271,7 +285,6 @@
           appId: "1:770009778959:web:fdb1188463f5bfdecb8c7a",
           measurementId: "G-DQR6RGHTK7"
         };
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -285,7 +298,6 @@
 
         window.onload = () => {
             handleTypeChange();
-            // 編集用Optionの複製
             document.getElementById('editOwner').innerHTML = document.getElementById('nameSelect').innerHTML;
             document.getElementById('editBrand').innerHTML = document.getElementById('brandSelect').innerHTML;
             document.getElementById('editSeries').innerHTML = document.getElementById('seriesSelect').innerHTML;
@@ -294,7 +306,6 @@
         window.switchTab = (tabName) => {
             document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
             document.getElementById(`page-${tabName}`).classList.add('active');
             document.getElementById(`tabBtn-${tabName}`).classList.add('active');
         };
@@ -303,23 +314,13 @@
             const type = document.getElementById('typeSelect').value;
             const standardFields = document.getElementById('standardFields');
             const statusField = document.getElementById('statusField');
-
-            if (type === 'セーブコード') {
-                standardFields.style.display = 'none';
-            } else {
-                standardFields.style.display = 'block';
-            }
-            if (type === 'コーデ') {
-                statusField.style.display = 'block';
-            } else {
-                statusField.style.display = 'none';
-            }
+            standardFields.style.display = (type === 'セーブコード') ? 'none' : 'block';
+            statusField.style.display = (type === 'コーデ') ? 'block' : 'none';
         };
 
         window.uploadImage = async () => {
             const fileInput = document.getElementById('fileInput');
             const files = fileInput.files;
-            
             const type = document.getElementById('typeSelect').value;
             let coordName = document.getElementById('coordName').value;
             let name = document.getElementById('nameSelect').value;
@@ -328,24 +329,10 @@
             let status = document.getElementById('statusSelect').value;
 
             if (files.length === 0) { alert("画像を選択してください"); return; }
-            if (files.length > 4) { alert("画像は最大4枚までです"); return; }
-            
-            // 値の正規化
-            if (type === 'セーブコード') {
-                coordName = "セーブコード";
-                brand = "-";
-                series = "-";
-                // nameはそのまま使う
-                status = "-";
-            } else if (type !== 'コーデ') {
-                status = "-";
-            }
+            if (type === 'セーブコード') { coordName = "セーブコード"; brand = "-"; series = "-"; status = "-"; }
+            else if (type !== 'コーデ') { status = "-"; }
 
-            if (!coordName || !name || !brand || !series) {
-                alert("全選択肢を入力してください！");
-                return;
-            }
-
+            if (!coordName || !name || !brand || !series) { alert("全選択肢を入力してください！"); return; }
             document.getElementById('statusMsg').style.display = 'block';
 
             try {
@@ -357,22 +344,13 @@
                     const url = await getDownloadURL(storageRef);
                     imageUrls.push(url);
                 }
-
                 await addDoc(collection(db, "coords"), {
-                    images: imageUrls,
-                    type: type,
-                    coordName: coordName,
-                    name: name,
-                    brand: brand,
-                    series: series,
-                    status: status, 
-                    createdAt: new Date()
+                    images: imageUrls, type, coordName, name, brand, series, status, createdAt: new Date()
                 });
-
                 alert("保存しました！");
                 location.reload(); 
             } catch (e) {
-                console.error("Error:", e);
+                console.error(e);
                 alert("エラー: " + e.message);
             } finally {
                 document.getElementById('statusMsg').style.display = 'none';
@@ -385,11 +363,8 @@
         }
         window.toggleFav = (id) => {
             let favs = getFavList();
-            if (favs.includes(id)) {
-                favs = favs.filter(favId => favId !== id);
-            } else {
-                favs.push(id);
-            }
+            if (favs.includes(id)) favs = favs.filter(favId => favId !== id);
+            else favs.push(id);
             localStorage.setItem('my_aipri_favs', JSON.stringify(favs));
             renderGallery(); 
         };
@@ -404,42 +379,33 @@
         window.toggleFavFilter = () => {
             isFavFilterOn = !isFavFilterOn;
             const btn = document.getElementById('favFilterBtn');
-            if (isFavFilterOn) btn.classList.add('active');
-            else btn.classList.remove('active');
+            btn.classList.toggle('active', isFavFilterOn);
             displayLimit = 5;
             filterImages();
         };
 
         async function loadImages() {
-            const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            allImages = [];
-            querySnapshot.forEach(docSnap => {
-                const data = docSnap.data();
-                data.id = docSnap.id;
-                if (!data.images) {
-                    data.images = [data.imageUrl || data.imageBase64];
-                }
-                allImages.push(data);
-            });
-            filterImages();
+            try {
+                const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                allImages = [];
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    data.id = docSnap.id;
+                    if (!data.images) data.images = [data.imageUrl || data.imageBase64];
+                    allImages.push(data);
+                });
+                filterImages();
+            } catch (e) { console.error("Firestore Load Error:", e); }
         }
 
         window.filterImages = () => {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const favs = getFavList();
-
             filteredImages = allImages.filter(item => {
                 if (isFavFilterOn && !favs.includes(item.id)) return false;
                 if (currentTypeFilter !== 'all' && item.type !== currentTypeFilter) return false;
-
-                const textMatch = 
-                    item.coordName.toLowerCase().includes(term) || 
-                    item.name.includes(term) ||
-                    (item.brand || '').includes(term) ||
-                    (item.series || '').includes(term);
-                
-                return textMatch;
+                return item.coordName.toLowerCase().includes(term) || item.name.includes(term) || (item.brand || '').includes(term) || (item.series || '').includes(term);
             });
             renderGallery();
         };
@@ -449,55 +415,38 @@
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             gallery.innerHTML = "";
             const favs = getFavList();
-
             const visibleItems = filteredImages.slice(0, displayLimit);
 
             visibleItems.forEach(item => {
                 const card = document.createElement('div');
                 card.className = "card";
-                
-                const thumbSrc = item.images[0];
-                const isMulti = item.images.length > 1;
                 const isFav = favs.includes(item.id);
-
                 let statusBadge = "";
                 if (item.type === 'コーデ' && item.status && item.status !== '-') {
                     const cls = item.status === 'コンプ' ? 'status-comp' : 'status-notcomp';
                     statusBadge = `<span class="status-badge ${cls}">${item.status}</span>`;
                 }
-                
                 const dataJson = encodeURIComponent(JSON.stringify(item));
-
                 card.innerHTML = `
                     <div class="fav-star ${isFav ? 'active' : ''}" onclick="toggleFav('${item.id}')">★</div>
-                    
                     <div class="img-container" onclick="openModal('${dataJson}')">
-                        <img src="${thumbSrc}" loading="lazy">
-                        ${isMulti ? '<span class="multi-icon">複数枚</span>' : ''}
+                        <img src="${item.images[0]}" loading="lazy">
+                        ${item.images.length > 1 ? '<span class="multi-icon">複数枚</span>' : ''}
                     </div>
-
                     <div class="tags">
                         <span class="coord-title">${item.coordName}</span>
                         ${statusBadge}<br>
                         種類: ${item.type} / ${item.name}<br>
-                        ${item.brand !== '-' ? item.brand : ''} 
-                        ${item.series !== '-' ? ' / ' + item.series : ''}
+                        ${item.brand !== '-' ? item.brand : ''} ${item.series !== '-' ? ' / ' + item.series : ''}
                     </div>
-
                     <div class="card-actions">
                         <button class="btn-card btn-edit" onclick="openEditModal('${dataJson}')">編集</button>
                         <button class="btn-card btn-delete" onclick="deleteItem('${item.id}')">削除</button>
-                    </div>
-                `;
+                    </div>`;
                 gallery.appendChild(card);
             });
-
-            if (filteredImages.length > displayLimit) {
-                loadMoreBtn.style.display = "block";
-                loadMoreBtn.innerText = `もっと見る (残り ${filteredImages.length - displayLimit}枚)`;
-            } else {
-                loadMoreBtn.style.display = "none";
-            }
+            loadMoreBtn.style.display = (filteredImages.length > displayLimit) ? "block" : "none";
+            if (loadMoreBtn.style.display === "block") loadMoreBtn.innerText = `もっと見る (残り ${filteredImages.length - displayLimit}枚)`;
         }
 
         window.showMoreImages = () => { displayLimit += 10; renderGallery(); };
@@ -508,35 +457,33 @@
                 await deleteDoc(doc(db, "coords", id));
                 alert("削除しました");
                 location.reload();
-            } catch (e) {
-                console.error(e);
-                alert("削除失敗");
-            }
+            } catch (e) { alert("削除失敗"); }
         };
 
+        /* ■ モーダルの修正：画像を並べ、下に閉じるボタンを作成 ■ */
         window.openModal = (encodedJson) => {
-    const item = JSON.parse(decodeURIComponent(encodedJson));
-    const modal = document.getElementById('imageModal');
-    const container = document.getElementById('modalImgs');
-    
-    container.innerHTML = "";
-    
-    // 画像を表示
-    item.images.forEach(src => {
-        const img = document.createElement('img');
-        img.src = src;
-        container.appendChild(img);
-    });
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            const modal = document.getElementById('imageModal');
+            const container = document.getElementById('modalImgs');
+            container.innerHTML = "";
+            
+            // 画像追加
+            item.images.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                container.appendChild(img);
+            });
 
-    // 「閉じる」ボタンを画像の下に追加
-    const closeBtn = document.createElement('button');
-    closeBtn.className = "btn-modal-close";
-    closeBtn.innerText = "閉じる";
-    closeBtn.onclick = closeModal;
-    container.appendChild(closeBtn);
+            // 閉じるボタン作成 (幅1/3)
+            const closeBtn = document.createElement('button');
+            closeBtn.className = "btn-modal-close";
+            closeBtn.innerText = "閉じる";
+            closeBtn.onclick = closeModal;
+            container.appendChild(closeBtn);
 
-    modal.style.display = "flex";
-};
+            modal.style.display = "flex";
+        };
+
         window.closeModal = () => { document.getElementById('imageModal').style.display = "none"; };
 
         window.openEditModal = (encodedJson) => {
@@ -548,7 +495,6 @@
             document.getElementById('editBrand').value = item.brand;
             document.getElementById('editSeries').value = item.series;
             document.getElementById('editStatus').value = (item.status && item.status !== '-') ? item.status : "未コンプ";
-
             handleEditTypeChange();
             document.getElementById('editModal').style.display = "flex";
         };
@@ -557,14 +503,8 @@
 
         window.handleEditTypeChange = () => {
             const type = document.getElementById('editType').value;
-            const fields = document.getElementById('editStandardFields');
-            const status = document.getElementById('editStatusField');
-
-            if (type === 'セーブコード') fields.style.display = 'none';
-            else fields.style.display = 'block';
-
-            if (type === 'コーデ') status.style.display = 'block';
-            else status.style.display = 'none';
+            document.getElementById('editStandardFields').style.display = (type === 'セーブコード') ? 'none' : 'block';
+            document.getElementById('editStatusField').style.display = (type === 'コーデ') ? 'block' : 'none';
         };
 
         window.saveEdit = async () => {
@@ -576,25 +516,15 @@
             const name = document.getElementById('editOwner').value;
             let status = document.getElementById('editStatus').value;
 
-            // 編集時も「状況」のルールを適用
-            if (type === 'セーブコード') {
-                coordName = "セーブコード";
-                brand = "-"; series = "-"; status = "-";
-            } else if (type !== 'コーデ') {
-                status = "-";
-            }
+            if (type === 'セーブコード') { coordName = "セーブコード"; brand = "-"; series = "-"; status = "-"; }
+            else if (type !== 'コーデ') { status = "-"; }
 
             try {
-                await updateDoc(doc(db, "coords", id), {
-                    type, coordName, name, brand, series, status
-                });
+                await updateDoc(doc(db, "coords", id), { type, coordName, name, brand, series, status });
                 alert("更新しました");
                 closeEditModal();
                 loadImages(); 
-            } catch (e) {
-                console.error(e);
-                alert("更新エラー");
-            }
+            } catch (e) { alert("更新エラー"); }
         };
 
         loadImages();
