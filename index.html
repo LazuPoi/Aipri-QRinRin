@@ -515,17 +515,28 @@
         };
 
         window.openModal = (encodedJson) => {
-            const item = JSON.parse(decodeURIComponent(encodedJson));
-            const modal = document.getElementById('imageModal');
-            const container = document.getElementById('modalImgs');
-            container.innerHTML = "";
-            item.images.forEach(src => {
-                const img = document.createElement('img');
-                img.src = src;
-                container.appendChild(img);
-            });
-            modal.style.display = "flex";
-        };
+    const item = JSON.parse(decodeURIComponent(encodedJson));
+    const modal = document.getElementById('imageModal');
+    const container = document.getElementById('modalImgs');
+    
+    container.innerHTML = "";
+    
+    // 画像を表示
+    item.images.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        container.appendChild(img);
+    });
+
+    // 「閉じる」ボタンを画像の下に追加
+    const closeBtn = document.createElement('button');
+    closeBtn.className = "btn-modal-close";
+    closeBtn.innerText = "閉じる";
+    closeBtn.onclick = closeModal;
+    container.appendChild(closeBtn);
+
+    modal.style.display = "flex";
+};
         window.closeModal = () => { document.getElementById('imageModal').style.display = "none"; };
 
         window.openEditModal = (encodedJson) => {
