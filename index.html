@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (Supabase移行版)</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>コーデ管理ページ</title>
     <style>
-        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 15px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
+        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
         
-        /* タブナビゲーション */
+        /* ■ タブナビゲーション ■ */
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .tab-btn { flex: 1; padding: 12px; border: none; background: #eee; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #555; transition: 0.3s; }
         .tab-btn.active { background: #ff6699; color: white; }
         
+        /* ページ切り替え */
         .page-section { display: none; }
         .page-section.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -21,42 +21,97 @@
         .container { background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
         input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        label { font-size: 0.9em; font-weight: bold; color: #555; display: block; margin-top: 10px; }
-
-        .btn-main { padding: 12px; width: 100%; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
-        .btn-main:hover { background-color: #e64d7f; }
-
-        /* ■ スマホ3列表示のレスポンシブ設定 ■ */
-        .gallery { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); /* デフォルト3列（スマホ） */
-            gap: 8px; 
-        }
-        @media (min-width: 600px) {
-            .gallery { 
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* PCはカード形式 */
-                gap: 15px; 
-            }
-        }
-
-        .card { border: 1px solid #eee; padding: 5px; border-radius: 6px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; cursor: pointer; }
+        label { font-size: 0.9em; font-weight: bold; color: #555; display: block; margin-top: 10px; margin-bottom: -5px;}
         
-        /* 正方形表示 */
-        .img-container { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; background-color: #f0f0f0; position: relative; }
+        .badge-req { color: #ff4444; font-size: 0.8em; margin-left: 5px; }
+
+        /* ボタン類 */
+        .btn-main { padding: 12px; width: 100%; box-sizing: border-box; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
+        .btn-main:hover { background-color: #e64d7f; }
+        .btn-sub { background-color: #66ccff; margin-top: 20px; width: 100%; padding: 12px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+
+        /* ■ フィルターボタン群 ■ */
+        .filter-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        
+        .filter-group { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr 1fr; 
+            gap: 5px; 
+        }
+        .filter-btn { 
+            padding: 10px 5px; 
+            border: 1px solid #ff99cc; 
+            background-color: #fff; 
+            color: #ff6699; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 0.85em; 
+            text-align: center;
+        }
+        .filter-btn:nth-child(1) { grid-column: 1 / 5; }
+
+        @media (min-width: 600px) {
+            .filter-group { display: flex; }
+            .filter-btn { flex: 1; }
+            .filter-btn:nth-child(1) { grid-column: auto; } 
+        }
+
+        .filter-btn.active { background-color: #ff6699; color: white; }
+        
+        .fav-filter-btn { width: 100%; background: #fff; border: 2px solid #ffd700; color: #d4af37; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .fav-filter-btn.active { background: #ffd700; color: #fff; }
+
+        /* カードデザイン */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .card { border: 1px solid #eee; padding: 10px; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; position: relative; }
+        
+        /* ■ 画像を正方形に変更 ■ */
+        .img-container {
+            width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; margin-bottom: 8px; cursor: zoom-in; background-color: #f0f0f0; position: relative;
+        }
         .img-container img { width: 100%; height: 100%; object-fit: cover; }
         
-        .tags { font-size: 0.65em; color: #666; line-height: 1.2; margin-top: 4px; overflow: hidden; }
-        .coord-title { font-size: 0.85em; font-weight: bold; color: #333; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dashed #eee; margin-bottom: 2px; }
+        .multi-icon { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.6); color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 10px; pointer-events: none; }
+
+        .tags { font-size: 0.75em; color: #666; line-height: 1.4; flex-grow: 1; }
+        .coord-title { font-size: 1.1em; font-weight: bold; color: #333; display: block; margin-bottom: 4px; border-bottom: 1px dashed #ddd; padding-bottom: 2px; }
+        .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; margin-bottom: 4px; font-weight: bold; }
+        .status-comp { background: #e6fffa; color: #00a0a0; border: 1px solid #00a0a0; }
+        .status-notcomp { background: #fff5f5; color: #e53e3e; border: 1px solid #e53e3e; }
+
+        .card-actions { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-card { flex: 1; padding: 6px; font-size: 0.8em; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        .btn-edit { background-color: #ffa500; }
+        .btn-delete { background-color: #ccc; color: #333; }
+        
+        .fav-star { position: absolute; top: 5px; right: 5px; font-size: 24px; color: #ddd; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 5; transition: transform 0.2s; }
+        .fav-star:hover { transform: scale(1.2); }
+        .fav-star.active { color: #ffd700; }
 
         /* モーダル */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-        .modal-content { background: transparent; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
+        .modal-content { background: #fff; padding: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
         .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .modal-imgs img { max-width: 100%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .modal-imgs img { max-width: 100%; border-radius: 4px; }
         
-        .btn-modal-close { display: block; width: 33.33%; margin: 20px auto 0; padding: 12px; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-align: center; }
+        /* ■ 閉じるボタンのデザイン追加 ■ */
+        .btn-modal-close { 
+            display: block; 
+            width: 33.33%; 
+            margin: 20px auto 0; 
+            padding: 12px; 
+            background-color: #ff6699; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            text-align: center; 
+        }
         
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
+
     </style>
 </head>
 <body>
@@ -69,19 +124,121 @@
     <section id="page-list" class="page-section active">
         <h2>検索・一覧</h2>
         <div class="container" style="padding: 10px;">
-            <input type="text" id="searchInput" placeholder="検索 (例: りんりん フラワーマーチ)" oninput="filterImages()">
+            <div class="filter-container">
+                <button id="favFilterBtn" class="fav-filter-btn" onclick="toggleFavFilter()">
+                    ★ お気に入りのみ表示
+                </button>
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="setFilterType('all', this)">すべて</button>
+                    <button class="filter-btn" onclick="setFilterType('コーデ', this)">コーデ</button>
+                    <button class="filter-btn" onclick="setFilterType('フレカ', this)">フレカ</button>
+                    <button class="filter-btn" onclick="setFilterType('チャンスQR', this)">チャンス</button>
+                    <button class="filter-btn" onclick="setFilterType('セーブコード', this)">セーブ</button>
+                </div>
+            </div>
+            <input type="text" id="searchInput" placeholder="検索 (コーデ名、なまえ、ブランド、弾数)..." oninput="filterImages()">
         </div>
         <div id="gallery" class="gallery"></div>
+        <button id="loadMoreBtn" class="btn-sub" onclick="showMoreImages()" style="display:none;">もっと見る</button>
     </section>
 
     <section id="page-register" class="page-section">
-        <h2>新規登録 (Supabase)</h2>
+        <h2>新規登録</h2>
         <div class="container">
-            <label>画像 (複数可)</label>
+            <label>画像 (最大4枚) <span class="badge-req">必須</span></label>
             <input type="file" id="fileInput" accept="image/*" multiple>
+            <small style="color:#888;">※Ctrlキーを押しながらクリックで複数選択できます</small>
+
+            <label>種類 <span class="badge-req">必須</span></label>
+            <select id="typeSelect" onchange="handleTypeChange()">
+                <option value="コーデ" selected>コーデ</option>
+                <option value="フレカ">フレカ</option>
+                <option value="チャンスQR">チャンスQR</option>
+                <option value="セーブコード">セーブコード</option>
+            </select>
+
+            <label>なまえ <span class="badge-req">必須</span></label>
+            <select id="nameSelect">
+                <option value="りんりん">りんりん</option>
+                <option value="るぺるかりあ">るぺるかりあ</option>
+                <option value="らんらん">らんらん</option>
+                <option value="るんるん">るんるん</option>
+                <option value="れんれん">れんれん</option>
+                <option value="ろんろん">ろんろん</option>
+                <option value="るとさなりあ">るとさなりあ</option>
+                <option value="その他">その他</option>
+            </select>
+
+            <div id="standardFields">
+                <label>コーデ名 <span class="badge-req">必須</span></label>
+                <input type="text" id="coordName" placeholder="入力してください">
+
+                <label>ブランド名 <span class="badge-req">必須</span></label>
+                <select id="brandSelect">
+                    <option value="Poppin' Heart">💗Poppin' Heart</option>
+                    <option value="Miracle Moon">🌙Miracle Moon</option>
+                    <option value="Flower March">🍀︎Flower March</option>
+                    <option value="Scarlet Butterfly">🦋Scarlet Butterfly</option>
+                    <option value="Rosession">🌹Rosession</option>
+                    <option value="RAINBOW CANDY">🍬RAINBOW CANDY</option>
+                    <option value="Bear Bear Bear">🐻Bear Bear Bear</option>
+                    <option value="Love My Music">🎶Love My Music</option>
+                    <option value="Prism Stone">💛Prism Stone</option>
+                    <option value="Crystal Verse">✨Crystal Verse</option>
+                    <option value="Princess Ring">💍Princess Ring</option>
+                    <option value="CUTIE CARAT">💎CUTIE CARAT</option>
+                    <option value="Future School">🚀Future School</option>
+                    <option value="Pretty Collection">💝Pretty Collection</option>
+                    <option value="その他">その他</option>
+                </select>
+
+                <label>弾数 <span class="badge-req">必須</span></label>
+                <select id="seriesSelect">
+                    <option value="1だん">1だん</option>
+                    <option value="2だん">2だん</option>
+                    <option value="3だん">3だん</option>
+                    <option value="4だん">4だん</option>
+                    <option value="5だん">5だん</option>
+                    <option value="6だん">6だん</option>
+                    <option value="6だんP">6だんP</option>
+                    <option value="リング1だん">リング1だん</option>
+                    <option value="リング2だん">リング2だん</option>
+                    <option value="リング3だん">リング3だん</option>
+                    <option value="リング4だん">リング4だん</option>
+                    <option value="リング5だん">リング5だん</option>
+                    <option value="リング6だん">リング6だん</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
+
+            <div id="statusField">
+                <label>状況 <span class="badge-req">必須(コーデのみ)</span></label>
+                <select id="statusSelect">
+                    <option value="未コンプ">未コンプ</option>
+                    <option value="コンプ">コンプ</option>
+                </select>
+            </div>
+
+            <button class="btn-main" onclick="uploadImage()">アップロード</button>
+            <p id="statusMsg" class="loading">画像を処理中...</p>
+        </div>
+    </section>
+
+    <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content" style="background:transparent; box-shadow:none; max-width:800px;">
+            <div id="modalImgs" class="modal-imgs"></div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal" onclick="if(event.target === this) closeEditModal()">
+        <div class="modal-content">
+            <span class="modal-close" style="position:absolute; top:10px; right:15px; font-size:28px; cursor:pointer;" onclick="closeEditModal()">&times;</span>
+            <h3 style="margin-top:0;">情報を編集</h3>
+            
+            <input type="hidden" id="editDocId">
             
             <label>種類</label>
-            <select id="typeSelect">
+            <select id="editType" onchange="handleEditTypeChange()">
                 <option value="コーデ">コーデ</option>
                 <option value="フレカ">フレカ</option>
                 <option value="チャンスQR">チャンスQR</option>
@@ -89,164 +246,61 @@
             </select>
 
             <label>なまえ</label>
-            <input type="text" id="nameInput" placeholder="りんりん">
+            <select id="editOwner"></select>
 
-            <label>コーデ名</label>
-            <input type="text" id="coordName" placeholder="フラワーマーチ">
+            <div id="editStandardFields">
+                <label>コーデ名</label>
+                <input type="text" id="editName">
+                <label>ブランド</label>
+                <select id="editBrand"></select>
+                <label>弾数</label>
+                <select id="editSeries"></select>
+            </div>
 
-            <button class="btn-main" onclick="uploadData()">アップロード</button>
-            <p id="statusMsg" class="loading">画像をサーバーに保存中...</p>
-        </div>
-    </section>
+            <div id="editStatusField">
+                <label>状況</label>
+                <select id="editStatus">
+                    <option value="未コンプ">未コンプ</option>
+                    <option value="コンプ">コンプ</option>
+                </select>
+            </div>
 
-    <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
-        <div class="modal-content">
-            <div id="modalImgs" class="modal-imgs"></div>
+            <button class="btn-main" onclick="saveEdit()">保存する</button>
         </div>
     </div>
 
-    <script>
-        // 設定情報の反映
-        const SUPABASE_URL = 'https://fxnfxxxsggiowwqtozbg.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_HFDc1M1YzKa8BBY37GCFIw_ICqRYEPp';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let allData = [];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-        // データ読み込み
-        async function loadData() {
-            const { data, error } = await _supabase
-                .from('coords')
-                .select('*')
-                .order('createdAt', { ascending: false });
-            
-            if (error) {
-                console.error("データ取得エラー:", error);
-            } else {
-                allData = data;
-                filterImages();
-            }
-        }
-
-        /* ■ AND検索ロジック (スペース区切り対応) ■ */
-        window.filterImages = () => {
-            const term = document.getElementById('searchInput').value.trim().toLowerCase();
-            const gallery = document.getElementById('gallery');
-            
-            if (!term) {
-                renderGallery(allData);
-                return;
-            }
-
-            const keywords = term.split(/\s+/); // 半角・全角スペースで分割
-
-            const filtered = allData.filter(item => {
-                // 検索対象の文字列（コーデ名 + なまえ）
-                const targetString = `${item.coordName} ${item.name}`.toLowerCase();
-                // すべてのキーワードが含まれているか (AND条件)
-                return keywords.every(key => targetString.includes(key));
-            });
-
-            renderGallery(filtered);
+        // ▼▼▼ あなたのキー情報 ▼▼▼
+        const firebaseConfig = {
+          apiKey: "AIzaSyD0KuN_xxHp4p36s5jH3QVfpcpVaEWRUEA",
+          authDomain: "aipri-qrinrin.firebaseapp.com",
+          projectId: "aipri-qrinrin",
+          storageBucket: "aipri-qrinrin.firebasestorage.app",
+          messagingSenderId: "770009778959",
+          appId: "1:770009778959:web:fdb1188463f5bfdecb8c7a",
+          measurementId: "G-DQR6RGHTK7"
         };
 
-        function renderGallery(data) {
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = "";
-            
-            data.forEach(item => {
-                const card = document.createElement('div');
-                card.className = "card";
-                card.onclick = () => openModal(item);
-                
-                card.innerHTML = `
-                    <div class="img-container">
-                        <img src="${item.images[0]}" loading="lazy">
-                    </div>
-                    <div class="tags">
-                        <span class="coord-title">${item.coordName}</span>
-                        ${item.name}
-                    </div>`;
-                gallery.appendChild(card);
-            });
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
 
-        // アップロード処理
-        window.uploadData = async () => {
-            const fileInput = document.getElementById('fileInput');
-            const files = fileInput.files;
-            if (files.length === 0) return alert("画像を選択してください");
+        let allImages = [];
+        let filteredImages = [];
+        let displayLimit = 5;
+        let currentTypeFilter = 'all';
+        let isFavFilterOn = false;
 
-            document.getElementById('statusMsg').style.display = 'block';
-
-            try {
-                const imageUrls = [];
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}_${i}.${fileExt}`;
-                    
-                    // Storageへアップロード (imagesバケット)
-                    const { data, error } = await _supabase.storage
-                        .from('images')
-                        .upload(fileName, file);
-
-                    if (error) throw error;
-
-                    // 公開URLを取得
-                    const { data: publicData } = _supabase.storage
-                        .from('images')
-                        .getPublicUrl(fileName);
-                    
-                    imageUrls.push(publicData.publicUrl);
-                }
-
-                // Database(coordsテーブル)へ保存
-                const { error: dbError } = await _supabase
-                    .from('coords')
-                    .insert([{
-                        images: imageUrls,
-                        type: document.getElementById('typeSelect').value,
-                        name: document.getElementById('nameInput').value,
-                        coordName: document.getElementById('coordName').value,
-                        brand: "-",
-                        series: "-",
-                        status: "未コンプ"
-                    }]);
-
-                if (dbError) throw dbError;
-
-                alert("登録が完了しました！");
-                location.reload();
-            } catch (e) {
-                console.error(e);
-                alert("エラーが発生しました: " + e.message);
-            } finally {
-                document.getElementById('statusMsg').style.display = 'none';
-            }
-        };
-
-        window.openModal = (item) => {
-            const container = document.getElementById('modalImgs');
-            container.innerHTML = "";
-            
-            item.images.forEach(src => {
-                const img = document.createElement('img');
-                img.src = src;
-                container.appendChild(img);
-            });
-
-            const closeBtn = document.createElement('button');
-            closeBtn.className = "btn-modal-close";
-            closeBtn.innerText = "閉じる";
-            closeBtn.onclick = closeModal;
-            container.appendChild(closeBtn);
-
-            document.getElementById('imageModal').style.display = "flex";
-        };
-
-        window.closeModal = () => {
-            document.getElementById('imageModal').style.display = "none";
+        window.onload = () => {
+            handleTypeChange();
+            document.getElementById('editOwner').innerHTML = document.getElementById('nameSelect').innerHTML;
+            document.getElementById('editBrand').innerHTML = document.getElementById('brandSelect').innerHTML;
+            document.getElementById('editSeries').innerHTML = document.getElementById('seriesSelect').innerHTML;
         };
 
         window.switchTab = (tabName) => {
@@ -256,8 +310,224 @@
             document.getElementById(`tabBtn-${tabName}`).classList.add('active');
         };
 
-        // 初期読み込み
-        loadData();
+        window.handleTypeChange = () => {
+            const type = document.getElementById('typeSelect').value;
+            const standardFields = document.getElementById('standardFields');
+            const statusField = document.getElementById('statusField');
+            standardFields.style.display = (type === 'セーブコード') ? 'none' : 'block';
+            statusField.style.display = (type === 'コーデ') ? 'block' : 'none';
+        };
+
+        window.uploadImage = async () => {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            const type = document.getElementById('typeSelect').value;
+            let coordName = document.getElementById('coordName').value;
+            let name = document.getElementById('nameSelect').value;
+            let brand = document.getElementById('brandSelect').value;
+            let series = document.getElementById('seriesSelect').value;
+            let status = document.getElementById('statusSelect').value;
+
+            if (files.length === 0) { alert("画像を選択してください"); return; }
+            if (type === 'セーブコード') { coordName = "セーブコード"; brand = "-"; series = "-"; status = "-"; }
+            else if (type !== 'コーデ') { status = "-"; }
+
+            if (!coordName || !name || !brand || !series) { alert("全選択肢を入力してください！"); return; }
+            document.getElementById('statusMsg').style.display = 'block';
+
+            try {
+                const imageUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const storageRef = ref(storage, 'images/' + new Date().getTime() + '_' + i + '_' + file.name);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
+                    imageUrls.push(url);
+                }
+                await addDoc(collection(db, "coords"), {
+                    images: imageUrls, type, coordName, name, brand, series, status, createdAt: new Date()
+                });
+                alert("保存しました！");
+                location.reload(); 
+            } catch (e) {
+                console.error(e);
+                alert("エラー: " + e.message);
+            } finally {
+                document.getElementById('statusMsg').style.display = 'none';
+            }
+        };
+
+        function getFavList() {
+            const stored = localStorage.getItem('my_aipri_favs');
+            return stored ? JSON.parse(stored) : [];
+        }
+        window.toggleFav = (id) => {
+            let favs = getFavList();
+            if (favs.includes(id)) favs = favs.filter(favId => favId !== id);
+            else favs.push(id);
+            localStorage.setItem('my_aipri_favs', JSON.stringify(favs));
+            renderGallery(); 
+        };
+
+        window.setFilterType = (type, btn) => {
+            currentTypeFilter = type;
+            document.querySelectorAll('.filter-container .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            displayLimit = 5;
+            filterImages();
+        };
+        window.toggleFavFilter = () => {
+            isFavFilterOn = !isFavFilterOn;
+            const btn = document.getElementById('favFilterBtn');
+            btn.classList.toggle('active', isFavFilterOn);
+            displayLimit = 5;
+            filterImages();
+        };
+
+        async function loadImages() {
+            try {
+                const q = query(collection(db, "coords"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                allImages = [];
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    data.id = docSnap.id;
+                    if (!data.images) data.images = [data.imageUrl || data.imageBase64];
+                    allImages.push(data);
+                });
+                filterImages();
+            } catch (e) { console.error("Firestore Load Error:", e); }
+        }
+
+        window.filterImages = () => {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const favs = getFavList();
+            filteredImages = allImages.filter(item => {
+                if (isFavFilterOn && !favs.includes(item.id)) return false;
+                if (currentTypeFilter !== 'all' && item.type !== currentTypeFilter) return false;
+                return item.coordName.toLowerCase().includes(term) || item.name.includes(term) || (item.brand || '').includes(term) || (item.series || '').includes(term);
+            });
+            renderGallery();
+        };
+
+        function renderGallery() {
+            const gallery = document.getElementById('gallery');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            gallery.innerHTML = "";
+            const favs = getFavList();
+            const visibleItems = filteredImages.slice(0, displayLimit);
+
+            visibleItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "card";
+                const isFav = favs.includes(item.id);
+                let statusBadge = "";
+                if (item.type === 'コーデ' && item.status && item.status !== '-') {
+                    const cls = item.status === 'コンプ' ? 'status-comp' : 'status-notcomp';
+                    statusBadge = `<span class="status-badge ${cls}">${item.status}</span>`;
+                }
+                const dataJson = encodeURIComponent(JSON.stringify(item));
+                card.innerHTML = `
+                    <div class="fav-star ${isFav ? 'active' : ''}" onclick="toggleFav('${item.id}')">★</div>
+                    <div class="img-container" onclick="openModal('${dataJson}')">
+                        <img src="${item.images[0]}" loading="lazy">
+                        ${item.images.length > 1 ? '<span class="multi-icon">複数枚</span>' : ''}
+                    </div>
+                    <div class="tags">
+                        <span class="coord-title">${item.coordName}</span>
+                        ${statusBadge}<br>
+                        種類: ${item.type} / ${item.name}<br>
+                        ${item.brand !== '-' ? item.brand : ''} ${item.series !== '-' ? ' / ' + item.series : ''}
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-card btn-edit" onclick="openEditModal('${dataJson}')">編集</button>
+                        <button class="btn-card btn-delete" onclick="deleteItem('${item.id}')">削除</button>
+                    </div>`;
+                gallery.appendChild(card);
+            });
+            loadMoreBtn.style.display = (filteredImages.length > displayLimit) ? "block" : "none";
+            if (loadMoreBtn.style.display === "block") loadMoreBtn.innerText = `もっと見る (残り ${filteredImages.length - displayLimit}枚)`;
+        }
+
+        window.showMoreImages = () => { displayLimit += 10; renderGallery(); };
+
+        window.deleteItem = async (id) => {
+            if (!confirm("削除しますか？")) return;
+            try {
+                await deleteDoc(doc(db, "coords", id));
+                alert("削除しました");
+                location.reload();
+            } catch (e) { alert("削除失敗"); }
+        };
+
+        /* ■ モーダルの修正：画像を並べ、下に閉じるボタンを作成 ■ */
+        window.openModal = (encodedJson) => {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            const modal = document.getElementById('imageModal');
+            const container = document.getElementById('modalImgs');
+            container.innerHTML = "";
+            
+            // 画像追加
+            item.images.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                container.appendChild(img);
+            });
+
+            // 閉じるボタン作成 (幅1/3)
+            const closeBtn = document.createElement('button');
+            closeBtn.className = "btn-modal-close";
+            closeBtn.innerText = "閉じる";
+            closeBtn.onclick = closeModal;
+            container.appendChild(closeBtn);
+
+            modal.style.display = "flex";
+        };
+
+        window.closeModal = () => { document.getElementById('imageModal').style.display = "none"; };
+
+        window.openEditModal = (encodedJson) => {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            document.getElementById('editDocId').value = item.id;
+            document.getElementById('editType').value = item.type;
+            document.getElementById('editName').value = item.coordName;
+            document.getElementById('editOwner').value = item.name;
+            document.getElementById('editBrand').value = item.brand;
+            document.getElementById('editSeries').value = item.series;
+            document.getElementById('editStatus').value = (item.status && item.status !== '-') ? item.status : "未コンプ";
+            handleEditTypeChange();
+            document.getElementById('editModal').style.display = "flex";
+        };
+        
+        window.closeEditModal = () => { document.getElementById('editModal').style.display = "none"; };
+
+        window.handleEditTypeChange = () => {
+            const type = document.getElementById('editType').value;
+            document.getElementById('editStandardFields').style.display = (type === 'セーブコード') ? 'none' : 'block';
+            document.getElementById('editStatusField').style.display = (type === 'コーデ') ? 'block' : 'none';
+        };
+
+        window.saveEdit = async () => {
+            const id = document.getElementById('editDocId').value;
+            const type = document.getElementById('editType').value;
+            let coordName = document.getElementById('editName').value;
+            let brand = document.getElementById('editBrand').value;
+            let series = document.getElementById('editSeries').value;
+            const name = document.getElementById('editOwner').value;
+            let status = document.getElementById('editStatus').value;
+
+            if (type === 'セーブコード') { coordName = "セーブコード"; brand = "-"; series = "-"; status = "-"; }
+            else if (type !== 'コーデ') { status = "-"; }
+
+            try {
+                await updateDoc(doc(db, "coords", id), { type, coordName, name, brand, series, status });
+                alert("更新しました");
+                closeEditModal();
+                loadImages(); 
+            } catch (e) { alert("更新エラー"); }
+        };
+
+        loadImages();
     </script>
 </body>
 </html>
