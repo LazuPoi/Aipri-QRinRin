@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (3列固定＆レイアウト調整版)</title>
+    <title>コーデ管理ページ (もっと見る追加版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* 全体のレイアウト設定 */
         body { 
             font-family: "Helvetica Neue", Arial, sans-serif; 
             padding: 15px; 
-            max-width: 100%; /* 画面幅いっぱいまで使う */
+            max-width: 100%; 
             margin: 0 auto; 
             background-color: #f9f9f9; 
             padding-bottom: 80px;
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            box-sizing: border-box; 
         }
         
         /* タブナビゲーション */
@@ -35,8 +36,8 @@
             border-radius: 8px; 
             margin-bottom: 20px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            width: 100%; /* 幅を親要素に合わせる */
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            width: 100%; 
+            box-sizing: border-box; 
         }
         
         input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
@@ -45,14 +46,14 @@
         .btn-main { padding: 12px; width: 100%; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
         .btn-main:hover { background-color: #e64d7f; }
 
-        /* 画像付き種類ボタンのコンテナ（崩れ防止） */
+        /* 画像付き種類ボタンのコンテナ */
         .category-selector {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             margin-bottom: 20px;
-            width: 100%; /* 幅を画面幅に合わせる */
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            width: 100%; 
+            box-sizing: border-box; 
         }
         .category-btn {
             position: relative;
@@ -72,7 +73,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            box-sizing: border-box; 
         }
         .category-btn::before {
             content: "";
@@ -95,18 +96,18 @@
             background: rgba(255, 102, 153, 0.4); 
         }
 
-        /* ■ 【重要：修正】強制3列固定＆画面幅追従のギャラリー ■ */
+        /* 強制3列固定＆画面幅追従のギャラリー */
         .gallery { 
             display: grid; 
-            grid-template-columns: repeat(3, minmax(0, 1fr)); /* 強制3列かつ幅を柔軟に */
-            gap: 8px; /* 隙間 */
-            width: 100%; /* 親要素幅に合わせる */
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            gap: 8px; 
+            width: 100%; 
+            box-sizing: border-box; 
         }
 
         .card { 
             border: 1px solid #eee; 
-            padding: 0; /* パディングをなくして枠いっぱいまで画像にする */
+            padding: 0; 
             border-radius: 6px; 
             background: #fff; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
@@ -114,15 +115,15 @@
             display: flex; 
             flex-direction: column; 
             cursor: pointer; 
-            overflow: hidden; /* 子要素のはみ出しをカット */
-            width: 100%; /* カード幅を3列均等に */
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            overflow: hidden; 
+            width: 100%; 
+            box-sizing: border-box; 
         }
         
-        /* ■ 【重要：修正】正方形を完全固定し、歪みを防止 ■ */
+        /* 正方形を完全固定し、歪みを防止 */
         .img-container { 
             width: 100%; 
-            aspect-ratio: 1 / 1; /* 正方形に固定 */
+            aspect-ratio: 1 / 1; 
             overflow: hidden; 
             background-color: #f0f0f0; 
             position: relative; 
@@ -133,8 +134,8 @@
             left: 50%;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* 歪めずに中央を切り抜き */
-            transform: translate(-50%, -50%); /* 中央配置 */
+            object-fit: cover; 
+            transform: translate(-50%, -50%); 
         }
         
         /* 文字のレイアウト */
@@ -142,8 +143,8 @@
             font-size: 0.65em; 
             color: #666; 
             line-height: 1.2; 
-            padding: 4px; /* テキストに余白 */
-            box-sizing: border-box; /* パディングを含めた幅計算 */
+            padding: 4px; 
+            box-sizing: border-box; 
         }
         .coord-title { 
             font-size: 0.85em; 
@@ -152,9 +153,33 @@
             display: block; 
             white-space: nowrap; 
             overflow: hidden; 
-            text-overflow: ellipsis; /* 長い場合は「...」 */
+            text-overflow: ellipsis; 
             border-bottom: 1px dashed #eee; 
             margin-bottom: 2px; 
+        }
+
+        /* ■ 新設：「もっと見る」ボタンのデザイン ■ */
+        .load-more-container {
+            text-align: center;
+            margin: 20px 0;
+            width: 100%;
+        }
+        .btn-load-more {
+            padding: 10px 24px;
+            font-size: 0.95em;
+            font-weight: bold;
+            background-color: #fff;
+            color: #ff6699;
+            border: 2px solid #ff6699;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: none; /* 初期状態は非表示 */
+        }
+        .btn-load-more:hover {
+            background-color: #ff6699;
+            color: #fff;
         }
 
         /* モーダル */
@@ -176,7 +201,6 @@
     <section id="page-list" class="page-section active">
         <h2>検索・一覧</h2>
         
-        <!-- 上部の選択ボタンエリア（独立しているので3列化の影響を受けません） -->
         <div class="category-selector">
             <button class="category-btn" id="btn-coorde" onclick="selectCategory('コーデ', this)"><span>コーデ</span></button>
             <button class="category-btn" id="btn-friend" onclick="selectCategory('フレカ', this)"><span>フレカ</span></button>
@@ -184,15 +208,15 @@
             <button class="category-btn" id="btn-save" onclick="selectCategory('セーブコード', this)"><span>セーブ</span></button>
         </div>
 
-        <!-- 検索バーエリア（幅100%を維持） -->
         <div class="container" id="searchContainer" style="padding: 10px; display: none; box-sizing: border-box;">
             <input type="text" id="searchInput" placeholder="選択した種類の中から検索 (例: りんりん)" oninput="filterImages()">
         </div>
         
         <div id="gallery" class="gallery"></div>
-            
-        <!-- 画像ギャラリーエリア（ここだけが強制3列になります） -->
-        <div id="gallery" class="gallery"></div>
+
+        <div class="load-more-container">
+            <button id="loadMoreBtn" class="btn-load-more" onclick="loadMore()">もっと見る ▼</button>
+        </div>
     </section>
 
     <section id="page-register" class="page-section">
@@ -240,6 +264,10 @@
 
         let allData = [];
         let currentCategory = ""; 
+        
+        // ■ 追加：表示制限を管理する変数 ■
+        let filteredData = []; // 選択・検索された結果の全データを一時保存
+        let visibleCount = 3;  // 現在画面に表示してよい件数（初期値3）
 
         // データ読み込み
         async function loadData() {
@@ -262,6 +290,10 @@
                 buttonElement.classList.add('selected');
             }
             currentCategory = categoryName;
+            
+            // カテゴリが変わったら表示件数を最初の「3件」にリセット
+            visibleCount = 3; 
+            
             document.getElementById('searchContainer').style.display = 'block';
             filterImages();
         };
@@ -269,23 +301,57 @@
         window.filterImages = () => {
             const term = document.getElementById('searchInput').value.trim().toLowerCase();
             const gallery = document.getElementById('gallery');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
             
             if (!currentCategory) {
                 gallery.innerHTML = "";
+                loadMoreBtn.style.display = "none";
                 return;
             }
 
-            let filtered = allData.filter(item => item.type === currentCategory);
+            // 1. カテゴリで絞り込み
+            filteredData = allData.filter(item => item.type === currentCategory);
 
+            // 2. 検索キーワードがある場合はさらに絞り込み
             if (term) {
                 const keywords = term.split(/\s+/);
-                filtered = filtered.filter(item => {
+                filteredData = filteredData.filter(item => {
                     const targetString = `${item.coordName} ${item.name}`.toLowerCase();
                     return keywords.every(key => targetString.includes(key));
                 });
+                // 検索文字が入力された際も、見やすさのため一旦上限を3件にリセットする（お好みで変更可能）
+                visibleCount = 3;
             }
 
-            renderGallery(filtered);
+            // 現在の制限数（visibleCount）だけを切り出してレンダリング
+            const dataToRender = filteredData.slice(0, visibleCount);
+            renderGallery(dataToRender);
+
+            // 「もっと見る」ボタンの表示制御
+            // 該当する全データ件数より、現在表示されている件数が少なければボタンを出す
+            if (filteredData.length > visibleCount) {
+                loadMoreBtn.style.display = "inline-block";
+            } else {
+                loadMoreBtn.style.display = "none";
+            }
+        };
+
+        // ■ 追加：「もっと見る」ボタンが押された時の処理 ■
+        window.loadMore = () => {
+            // 表示上限を6件追加
+            visibleCount += 6;
+            
+            // 再描画
+            const dataToRender = filteredData.slice(0, visibleCount);
+            renderGallery(dataToRender);
+
+            // ボタンの再判定
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            if (filteredData.length > visibleCount) {
+                loadMoreBtn.style.display = "inline-block";
+            } else {
+                loadMoreBtn.style.display = "none";
+            }
         };
 
         function renderGallery(data) {
