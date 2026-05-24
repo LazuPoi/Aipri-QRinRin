@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (もっと見る追加版)</title>
+    <title>コーデ管理ページ (編集・削除機能付き)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* 全体のレイアウト設定 */
@@ -40,7 +40,7 @@
             box-sizing: border-box; 
         }
         
-        input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        input, select { margin: 8px 0; padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
         label { font-size: 0.9em; font-weight: bold; color: #555; display: block; margin-top: 10px; }
 
         .btn-main { padding: 12px; width: 100%; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
@@ -120,7 +120,7 @@
             box-sizing: border-box; 
         }
         
-        /* 正方形を完全固定し、歪みを防止 */
+        /* 正方形固定 */
         .img-container { 
             width: 100%; 
             aspect-ratio: 1 / 1; 
@@ -158,36 +158,86 @@
             margin-bottom: 2px; 
         }
 
-        /* ■ 新設：「もっと見る」ボタンのデザイン ■ */
-        .load-more-container {
-            text-align: center;
-            margin: 20px 0;
-            width: 100%;
-        }
+        /* 「もっと見る」ボタン */
+        .load-more-container { text-align: center; margin: 20px 0; width: 100%; }
         .btn-load-more {
-            padding: 10px 24px;
-            font-size: 0.95em;
-            font-weight: bold;
-            background-color: #fff;
-            color: #ff6699;
-            border: 2px solid #ff6699;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: none; /* 初期状態は非表示 */
+            padding: 10px 24px; font-size: 0.95em; font-weight: bold; background-color: #fff; color: #ff6699; border: 2px solid #ff6699; border-radius: 20px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: none;
         }
-        .btn-load-more:hover {
-            background-color: #ff6699;
-            color: #fff;
+        .btn-load-more:hover { background-color: #ff6699; color: #fff; }
+
+        /* モーダル基本設定 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal-content { background: transparent; width: 92%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
+        .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; }
+        .modal-imgs img { max-width: 100%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        /* ■ 新設：モーダル下部のボタン並びレイアウト ■ */
+        .modal-action-bar {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 100%;
+            margin-top: 20px;
+            box-sizing: border-box;
+        }
+        .btn-modal-close { 
+            flex: 3; /* 閉じるボタンを少し広めに */
+            padding: 12px; 
+            background-color: #ff6699; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            text-align: center; 
+        }
+        .btn-modal-gear {
+            flex: 1; /* 歯車ボタン */
+            padding: 12px;
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.2em;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* モーダル */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
-        .modal-content { background: transparent; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
-        .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .modal-imgs img { max-width: 100%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .btn-modal-close { display: block; width: 33.33%; margin: 20px auto 0; padding: 12px; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-align: center; }
+        /* ■ 新設：メニューと編集エリアのスタイル ■ */
+        .gear-menu {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-menu-item {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            text-align: center;
+        }
+        .btn-menu-edit { background-color: #0099ff; }
+        .btn-menu-delete { background-color: #ff3333; }
+
+        .edit-form-container {
+            display: none;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+        }
+        .edit-form-container h3 { margin: 0 0 10px 0; font-size: 1em; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
 </head>
@@ -247,11 +297,36 @@
     <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
         <div class="modal-content">
             <div id="modalImgs" class="modal-imgs"></div>
+            
+            <div class="modal-action-bar">
+                <button class="btn-modal-close" onclick="closeModal()">閉じる</button>
+                <button class="btn-modal-gear" onclick="toggleGearMenu()">⚙</button>
+            </div>
+
+            <div id="gearMenu" class="gear-menu">
+                <button class="btn-menu-item btn-menu-edit" onclick="showEditForm()">編集</button>
+                <button class="btn-menu-item btn-menu-delete" onclick="deleteCurrentData()">削除</button>
+            </div>
+
+            <div id="editFormContainer" class="edit-form-container">
+                <h3>データを編集</h3>
+                <label>種類</label>
+                <select id="editTypeSelect">
+                    <option value="コーデ">コーデ</option>
+                    <option value="フレカ">フレカ</option>
+                    <option value="チャンスQR">チャンスQR</option>
+                    <option value="セーブコード">セーブコード</option>
+                </select>
+                <label>なまえ</label>
+                <input type="text" id="editNameInput">
+                <label>コーデ名</label>
+                <input type="text" id="editCoordName">
+                <button class="btn-main" style="margin-top:10px;" onclick="updateCurrentData()">更新する</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 設定情報の反映
         const SUPABASE_URL = 'https://fxnfxxxsgqiowwqtozbg.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_HFDc1M1YzKa8BBY37GCFIw_ICqRYEPp';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -264,12 +339,10 @@
 
         let allData = [];
         let currentCategory = ""; 
-        
-        // ■ 追加：表示制限を管理する変数 ■
-        let filteredData = []; // 選択・検索された結果の全データを一時保存
-        let visibleCount = 3;  // 現在画面に表示してよい件数（初期値3）
+        let filteredData = []; 
+        let visibleCount = 3;  
+        let currentTargetItem = null; // 現在モーダルで開いているデータ情報を保持
 
-        // データ読み込み
         async function loadData() {
             const { data, error } = await _supabase
                 .from('coords')
@@ -290,10 +363,7 @@
                 buttonElement.classList.add('selected');
             }
             currentCategory = categoryName;
-            
-            // カテゴリが変わったら表示件数を最初の「3件」にリセット
             visibleCount = 3; 
-            
             document.getElementById('searchContainer').style.display = 'block';
             filterImages();
         };
@@ -309,26 +379,19 @@
                 return;
             }
 
-            // 1. カテゴリで絞り込み
             filteredData = allData.filter(item => item.type === currentCategory);
 
-            // 2. 検索キーワードがある場合はさらに絞り込み
             if (term) {
                 const keywords = term.split(/\s+/);
                 filteredData = filteredData.filter(item => {
                     const targetString = `${item.coordName} ${item.name}`.toLowerCase();
                     return keywords.every(key => targetString.includes(key));
                 });
-                // 検索文字が入力された際も、見やすさのため一旦上限を3件にリセットする（お好みで変更可能）
-                visibleCount = 3;
             }
 
-            // 現在の制限数（visibleCount）だけを切り出してレンダリング
             const dataToRender = filteredData.slice(0, visibleCount);
             renderGallery(dataToRender);
 
-            // 「もっと見る」ボタンの表示制御
-            // 該当する全データ件数より、現在表示されている件数が少なければボタンを出す
             if (filteredData.length > visibleCount) {
                 loadMoreBtn.style.display = "inline-block";
             } else {
@@ -336,16 +399,11 @@
             }
         };
 
-        // ■ 追加：「もっと見る」ボタンが押された時の処理 ■
         window.loadMore = () => {
-            // 表示上限を6件追加
             visibleCount += 6;
-            
-            // 再描画
             const dataToRender = filteredData.slice(0, visibleCount);
             renderGallery(dataToRender);
 
-            // ボタンの再判定
             const loadMoreBtn = document.getElementById('loadMoreBtn');
             if (filteredData.length > visibleCount) {
                 loadMoreBtn.style.display = "inline-block";
@@ -427,7 +485,10 @@
             }
         };
 
+        /* ■ モーダルオープン時にデータを紐付け ■ */
         window.openModal = (item) => {
+            currentTargetItem = item; // 操作対象を保存
+            
             const container = document.getElementById('modalImgs');
             container.innerHTML = "";
             
@@ -437,17 +498,89 @@
                 container.appendChild(img);
             });
 
-            const closeBtn = document.createElement('button');
-            closeBtn.className = "btn-modal-close";
-            closeBtn.innerText = "閉じる";
-            closeBtn.onclick = closeModal;
-            container.appendChild(closeBtn);
+            // メニューやフォームの状態を閉じた状態に初期化
+            document.getElementById('gearMenu').style.display = "none";
+            document.getElementById('editFormContainer').style.display = "none";
 
             document.getElementById('imageModal').style.display = "flex";
         };
 
         window.closeModal = () => {
             document.getElementById('imageModal').style.display = "none";
+            currentTargetItem = null;
+        };
+
+        /* ■ 歯車ボタンのメニュー開閉 ■ */
+        window.toggleGearMenu = () => {
+            const menu = document.getElementById('gearMenu');
+            menu.style.display = (menu.style.display === "grid") ? "none" : "grid";
+        };
+
+        /* ■ 編集フォームの表示と値の初期セット ■ */
+        window.showEditForm = () => {
+            if (!currentTargetItem) return;
+            const form = document.getElementById('editFormContainer');
+            
+            // 現在の値をフォームに自動セット
+            document.getElementById('editTypeSelect').value = currentTargetItem.type;
+            document.getElementById('editNameInput').value = currentTargetItem.name;
+            document.getElementById('editCoordName').value = currentTargetItem.coordName;
+
+            form.style.display = (form.style.display === "block") ? "none" : "block";
+        };
+
+        /* ■ Supabaseへ「更新(UPDATE)」リクエストを送る処理 ■ */
+        window.updateCurrentData = async () => {
+            if (!currentTargetItem) return;
+            
+            const newType = document.getElementById('editTypeSelect').value;
+            const newName = document.getElementById('editNameInput').value;
+            const newCoordName = document.getElementById('editCoordName').value;
+
+            try {
+                const { error } = await _supabase
+                    .from('coords')
+                    .update({ 
+                        type: newType, 
+                        name: newName, 
+                        coordName: newCoordName 
+                    })
+                    .eq('id', currentTargetItem.id); // 開いているデータのIDと一致する行を変更
+
+                if (error) throw error;
+
+                alert("修正が完了しました！");
+                closeModal();
+                loadData(); // 一覧のデータを再読み込み
+            } catch (e) {
+                console.error(e);
+                alert("更新エラーが発生しました: " + e.message);
+            }
+        };
+
+        /* ■ Supabaseから「削除(DELETE)」リクエストを送る処理 ■ */
+        window.deleteCurrentData = async () => {
+            if (!currentTargetItem) return;
+
+            const check = confirm(`「${currentTargetItem.coordName || '無題'}」のデータと画像を完全に削除しますか？\n(この操作は取り消せません)`);
+            if (!check) return;
+
+            try {
+                // データベース(coordsテーブル)から削除
+                const { error } = await _supabase
+                    .from('coords')
+                    .delete()
+                    .eq('id', currentTargetItem.id);
+
+                if (error) throw error;
+
+                alert("削除しました。");
+                closeModal();
+                loadData(); // 一覧のデータを再読み込み
+            } catch (e) {
+                console.error(e);
+                alert("削除エラーが発生しました: " + e.message);
+            }
         };
 
         window.switchTab = (tabName) => {
