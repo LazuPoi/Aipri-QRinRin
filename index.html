@@ -1,6 +1,11 @@
-/* ■ CSSここから差し替え ■ */
-
-        /* 全体のレイアウト設定 */
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コーデ管理ページ (3列固定＆レイアウト調整版)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
         body { 
             font-family: "Helvetica Neue", Arial, sans-serif; 
             padding: 15px; 
@@ -159,5 +164,234 @@
         .modal-imgs img { max-width: 100%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .btn-modal-close { display: block; width: 33.33%; margin: 20px auto 0; padding: 12px; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-align: center; }
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
 
-        /* ■ CSSここまで ■ */
+    <nav class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('list')" id="tabBtn-list">一覧</button>
+        <button class="tab-btn" onclick="switchTab('register')" id="tabBtn-register">登録</button>
+    </nav>
+
+    <section id="page-list" class="page-section active">
+        <h2>検索・一覧</h2>
+        
+        <!-- 上部の選択ボタンエリア（独立しているので3列化の影響を受けません） -->
+        <div class="category-selector">
+            <button class="category-btn" id="btn-coorde" onclick="selectCategory('コーデ', this)"><span>コーデ</span></button>
+            <button class="category-btn" id="btn-friend" onclick="selectCategory('フレカ', this)"><span>フレカ</span></button>
+            <button class="category-btn" id="btn-chance" onclick="selectCategory('チャンスQR', this)"><span>チャンス</span></button>
+            <button class="category-btn" id="btn-save" onclick="selectCategory('セーブコード', this)"><span>セーブ</span></button>
+        </div>
+
+        <!-- 検索バーエリア（幅100%を維持） -->
+        <div class="container" id="searchContainer" style="padding: 10px; display: none; box-sizing: border-box;">
+            <input type="text" id="searchInput" placeholder="選択した種類の中から検索 (例: りんりん)" oninput="filterImages()">
+        </div>
+        
+        <div id="gallery" class="gallery"></div>
+            
+        <!-- 画像ギャラリーエリア（ここだけが強制3列になります） -->
+        <div id="gallery" class="gallery"></div>
+    </section>
+
+    <section id="page-register" class="page-section">
+        <h2>新規登録 (Supabase)</h2>
+        <div class="container">
+            <label>画像 (複数可)</label>
+            <input type="file" id="fileInput" accept="image/*" multiple>
+            
+            <label>種類</label>
+            <select id="typeSelect">
+                <option value="コーデ">コーデ</option>
+                <option value="フレカ">フレカ</option>
+                <option value="チャンスQR">チャンスQR</option>
+                <option value="セーブコード">セーブコード</option>
+            </select>
+
+            <label>なまえ</label>
+            <input type="text" id="nameInput" placeholder="りんりん">
+
+            <label>コーデ名</label>
+            <input type="text" id="coordName" placeholder="フラワーマーチ">
+
+            <button class="btn-main" onclick="uploadData()">アップロード</button>
+            <p id="statusMsg" class="loading">画像をサーバーに保存中...</p>
+        </div>
+    </section>
+
+    <div id="imageModal" class="modal" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content">
+            <div id="modalImgs" class="modal-imgs"></div>
+        </div>
+    </div>
+
+    <script>
+        // 設定情報の反映
+        const SUPABASE_URL = 'https://fxnfxxxsgqiowwqtozbg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_HFDc1M1YzKa8BBY37GCFIw_ICqRYEPp';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ボタン用画像のURL指定
+        document.getElementById('btn-coorde').style.backgroundImage = "url('./coorde.jpg')";
+        document.getElementById('btn-friend').style.backgroundImage = "url('./friend.jpg')";
+        document.getElementById('btn-chance').style.backgroundImage = "url('./chance.jpg')";
+        document.getElementById('btn-save').style.backgroundImage = "url('./save.jpg')";
+
+        let allData = [];
+        let currentCategory = ""; 
+
+        // データ読み込み
+        async function loadData() {
+            const { data, error } = await _supabase
+                .from('coords')
+                .select('*')
+                .order('createdAt', { ascending: false });
+            
+            if (error) {
+                console.error("データ取得エラー:", error);
+            } else {
+                allData = data;
+                filterImages();
+            }
+        }
+
+        window.selectCategory = (categoryName, buttonElement) => {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
+            if (buttonElement) {
+                buttonElement.classList.add('selected');
+            }
+            currentCategory = categoryName;
+            document.getElementById('searchContainer').style.display = 'block';
+            filterImages();
+        };
+
+        window.filterImages = () => {
+            const term = document.getElementById('searchInput').value.trim().toLowerCase();
+            const gallery = document.getElementById('gallery');
+            
+            if (!currentCategory) {
+                gallery.innerHTML = "";
+                return;
+            }
+
+            let filtered = allData.filter(item => item.type === currentCategory);
+
+            if (term) {
+                const keywords = term.split(/\s+/);
+                filtered = filtered.filter(item => {
+                    const targetString = `${item.coordName} ${item.name}`.toLowerCase();
+                    return keywords.every(key => targetString.includes(key));
+                });
+            }
+
+            renderGallery(filtered);
+        };
+
+        function renderGallery(data) {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = "";
+            
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "card";
+                card.onclick = () => openModal(item);
+                
+                card.innerHTML = `
+                    <div class="img-container">
+                        <img src="${item.images[0]}" loading="lazy">
+                    </div>
+                    <div class="tags">
+                        <span class="coord-title">${item.coordName}</span>
+                        ${item.name}
+                    </div>`;
+                gallery.appendChild(card);
+            });
+        }
+
+        // アップロード処理
+        window.uploadData = async () => {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            if (files.length === 0) return alert("画像を選択してください");
+
+            document.getElementById('statusMsg').style.display = 'block';
+
+            try {
+                const imageUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${i}.${fileExt}`;
+                    
+                    const { data, error } = await _supabase.storage
+                        .from('images')
+                        .upload(fileName, file);
+
+                    if (error) throw error;
+
+                    const { data: publicData } = _supabase.storage
+                        .from('images')
+                        .getPublicUrl(fileName);
+                    
+                    imageUrls.push(publicData.publicUrl);
+                }
+
+                const { error: dbError } = await _supabase
+                    .from('coords')
+                    .insert([{
+                        images: imageUrls,
+                        type: document.getElementById('typeSelect').value,
+                        name: document.getElementById('nameInput').value,
+                        coordName: document.getElementById('coordName').value,
+                        brand: "-",
+                        series: "-",
+                        status: "未コンプ"
+                    }]);
+
+                if (dbError) throw dbError;
+
+                alert("登録が完了しました！");
+                location.reload();
+            } catch (e) {
+                console.error(e);
+                alert("エラーが発生しました: " + e.message);
+            } finally {
+                document.getElementById('statusMsg').style.display = 'none';
+            }
+        };
+
+        window.openModal = (item) => {
+            const container = document.getElementById('modalImgs');
+            container.innerHTML = "";
+            
+            item.images.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                container.appendChild(img);
+            });
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = "btn-modal-close";
+            closeBtn.innerText = "閉じる";
+            closeBtn.onclick = closeModal;
+            container.appendChild(closeBtn);
+
+            document.getElementById('imageModal').style.display = "flex";
+        };
+
+        window.closeModal = () => {
+            document.getElementById('imageModal').style.display = "none";
+        };
+
+        window.switchTab = (tabName) => {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`page-${tabName}`).classList.add('active');
+            document.getElementById(`tabBtn-${tabName}`).classList.add('active');
+        };
+
+        loadData();
+    </script>
+</body>
+</html>
