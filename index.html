@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (ボタン画像化版)</title>
+    <title>コーデ管理ページ (3列固定＆レイアウト調整版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 15px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
@@ -26,7 +26,7 @@
         .btn-main { padding: 12px; width: 100%; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
         .btn-main:hover { background-color: #e64d7f; }
 
-        /* ■ 画像付き種類ボタンのスタイル ■ */
+        /* 画像付き種類ボタンのスタイル（常に2列で綺麗に配置） */
         .category-selector {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -35,7 +35,7 @@
         }
         .category-btn {
             position: relative;
-            height: 90px; /* ボタンの高さ */
+            height: 90px; 
             font-size: 1.2em;
             font-weight: bold;
             color: white;
@@ -52,46 +52,46 @@
             align-items: center;
             justify-content: center;
         }
-        /* 文字を読みやすくするための黒いモヤ（オーバーレイ） */
         .category-btn::before {
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.4); /* 暗さの調整。数値を上げると暗くなります */
+            background: rgba(0, 0, 0, 0.4); 
             transition: background 0.2s;
             z-index: 1;
         }
-        /* ボタン内のテキスト用 */
         .category-btn span {
             position: relative;
             z-index: 2;
-            text-shadow: 1px 1px 4px rgba(0,0,0,0.8); /* 文字の影 */
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8); 
         }
-        /* 選択されているボタンのスタイル */
         .category-btn.selected {
             border: 3px solid #ff6699;
             box-shadow: 0 0 10px rgba(255, 102, 153, 0.5);
         }
         .category-btn.selected::before {
-            background: rgba(255, 102, 153, 0.4); /* 選択時はピンクっぽいモヤに */
+            background: rgba(255, 102, 153, 0.4); 
         }
 
-        /* ■ スマホ3列表示のレスポンシブ設定 ■ */
+        /* ■ 【改良】どんな画面サイズでも強制的に「3列固定」にする設定 ■ */
         .gallery { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
+            grid-template-columns: repeat(3, 1fr); /* 画面サイズに関わらず100% 3列 */
             gap: 8px; 
         }
+
+        /* PCやタブレットなど、画面が広いときはカード間の隙間を少し広げて見やすく */
         @media (min-width: 600px) {
             .gallery { 
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-                gap: 15px; 
+                gap: 12px; 
             }
         }
 
         .card { border: 1px solid #eee; padding: 5px; border-radius: 6px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; cursor: pointer; }
         .img-container { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; background-color: #f0f0f0; position: relative; }
         .img-container img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* 3列固定でカードが小さくなっても文字が溢れないようにフォントサイズを微調整 */
         .tags { font-size: 0.65em; color: #666; line-height: 1.2; margin-top: 4px; overflow: hidden; }
         .coord-title { font-size: 0.85em; font-weight: bold; color: #333; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dashed #eee; margin-bottom: 2px; }
 
@@ -114,7 +114,7 @@
     <section id="page-list" class="page-section active">
         <h2>検索・一覧</h2>
         
-        <!-- ■ ボタンの中に <span> を配置するように変更 ■ -->
+        <!-- 上部の選択ボタンエリア（独立しているので3列化の影響を受けません） -->
         <div class="category-selector">
             <button class="category-btn" id="btn-coorde" onclick="selectCategory('コーデ', this)"><span>コーデ</span></button>
             <button class="category-btn" id="btn-friend" onclick="selectCategory('フレカ', this)"><span>フレカ</span></button>
@@ -122,10 +122,12 @@
             <button class="category-btn" id="btn-save" onclick="selectCategory('セーブコード', this)"><span>セーブ</span></button>
         </div>
 
+        <!-- 検索バーエリア（幅100%を維持） -->
         <div class="container" id="searchContainer" style="padding: 10px; display: none;">
             <input type="text" id="searchInput" placeholder="選択した種類の中から検索 (例: りんりん)" oninput="filterImages()">
         </div>
         
+        <!-- 画像ギャラリーエリア（ここだけが強制3列になります） -->
         <div id="gallery" class="gallery"></div>
     </section>
 
@@ -166,14 +168,11 @@
         const SUPABASE_KEY = 'sb_publishable_HFDc1M1YzKa8BBY37GCFIw_ICqRYEPp';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ★★★ 【重要】ボタン用画像のURL指定 ★★★
-        // GitHubに保存した画像のパス、またはURLをここに設定してください。
-        // 同じフォルダ内（ルート）に置く場合は './coorde.jpg' のような書き方でも動きます。
+        // ボタン用画像のURL指定
         document.getElementById('btn-coorde').style.backgroundImage = "url('./coorde.jpg')";
         document.getElementById('btn-friend').style.backgroundImage = "url('./friend.jpg')";
         document.getElementById('btn-chance').style.backgroundImage = "url('./chance.jpg')";
         document.getElementById('btn-save').style.backgroundImage = "url('./save.jpg')";
-
 
         let allData = [];
         let currentCategory = ""; 
