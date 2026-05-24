@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (編集・削除機能付き)</title>
+    <title>コーデ管理ページ (操作ボタン最下部配置版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* 全体のレイアウト設定 */
@@ -171,17 +171,17 @@
         .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; }
         .modal-imgs img { max-width: 100%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         
-        /* ■ 新設：モーダル下部のボタン並びレイアウト ■ */
+        /* モーダル下部のボタン並びレイアウト */
         .modal-action-bar {
             display: flex;
             gap: 10px;
             width: 100%;
             max-width: 100%;
-            margin-top: 20px;
+            margin-top: 15px; /* マージンを調整 */
             box-sizing: border-box;
         }
         .btn-modal-close { 
-            flex: 3; /* 閉じるボタンを少し広めに */
+            flex: 3; 
             padding: 12px; 
             background-color: #ff6699; 
             color: white; 
@@ -192,7 +192,7 @@
             text-align: center; 
         }
         .btn-modal-gear {
-            flex: 1; /* 歯車ボタン */
+            flex: 1; 
             padding: 12px;
             background-color: #555;
             color: white;
@@ -206,13 +206,13 @@
             justify-content: center;
         }
 
-        /* ■ 新設：メニューと編集エリアのスタイル ■ */
+        /* メニューと編集エリアのスタイル */
         .gear-menu {
             display: none;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px; /* マージンを調整 */
         }
         .btn-menu-item {
             padding: 10px;
@@ -231,7 +231,7 @@
             background: #fff;
             padding: 15px;
             border-radius: 6px;
-            margin-top: 15px;
+            margin-top: 15px; /* マージンを調整 */
             width: 100%;
             box-sizing: border-box;
             text-align: left;
@@ -298,11 +298,6 @@
         <div class="modal-content">
             <div id="modalImgs" class="modal-imgs"></div>
             
-            <div class="modal-action-bar">
-                <button class="btn-modal-close" onclick="closeModal()">閉じる</button>
-                <button class="btn-modal-gear" onclick="toggleGearMenu()">⚙</button>
-            </div>
-
             <div id="gearMenu" class="gear-menu">
                 <button class="btn-menu-item btn-menu-edit" onclick="showEditForm()">編集</button>
                 <button class="btn-menu-item btn-menu-delete" onclick="deleteCurrentData()">削除</button>
@@ -323,6 +318,11 @@
                 <input type="text" id="editCoordName">
                 <button class="btn-main" style="margin-top:10px;" onclick="updateCurrentData()">更新する</button>
             </div>
+
+            <div class="modal-action-bar">
+                <button class="btn-modal-close" onclick="closeModal()">閉じる</button>
+                <button class="btn-modal-gear" onclick="toggleGearMenu()">⚙</button>
+            </div>
         </div>
     </div>
 
@@ -341,7 +341,7 @@
         let currentCategory = ""; 
         let filteredData = []; 
         let visibleCount = 3;  
-        let currentTargetItem = null; // 現在モーダルで開いているデータ情報を保持
+        let currentTargetItem = null; 
 
         async function loadData() {
             const { data, error } = await _supabase
@@ -485,9 +485,8 @@
             }
         };
 
-        /* ■ モーダルオープン時にデータを紐付け ■ */
         window.openModal = (item) => {
-            currentTargetItem = item; // 操作対象を保存
+            currentTargetItem = item; 
             
             const container = document.getElementById('modalImgs');
             container.innerHTML = "";
@@ -498,7 +497,6 @@
                 container.appendChild(img);
             });
 
-            // メニューやフォームの状態を閉じた状態に初期化
             document.getElementById('gearMenu').style.display = "none";
             document.getElementById('editFormContainer').style.display = "none";
 
@@ -510,18 +508,15 @@
             currentTargetItem = null;
         };
 
-        /* ■ 歯車ボタンのメニュー開閉 ■ */
         window.toggleGearMenu = () => {
             const menu = document.getElementById('gearMenu');
             menu.style.display = (menu.style.display === "grid") ? "none" : "grid";
         };
 
-        /* ■ 編集フォームの表示と値の初期セット ■ */
         window.showEditForm = () => {
             if (!currentTargetItem) return;
             const form = document.getElementById('editFormContainer');
             
-            // 現在の値をフォームに自動セット
             document.getElementById('editTypeSelect').value = currentTargetItem.type;
             document.getElementById('editNameInput').value = currentTargetItem.name;
             document.getElementById('editCoordName').value = currentTargetItem.coordName;
@@ -529,7 +524,6 @@
             form.style.display = (form.style.display === "block") ? "none" : "block";
         };
 
-        /* ■ Supabaseへ「更新(UPDATE)」リクエストを送る処理 ■ */
         window.updateCurrentData = async () => {
             if (!currentTargetItem) return;
             
@@ -545,20 +539,19 @@
                         name: newName, 
                         coordName: newCoordName 
                     })
-                    .eq('id', currentTargetItem.id); // 開いているデータのIDと一致する行を変更
+                    .eq('id', currentTargetItem.id);
 
                 if (error) throw error;
 
                 alert("修正が完了しました！");
                 closeModal();
-                loadData(); // 一覧のデータを再読み込み
+                loadData(); 
             } catch (e) {
                 console.error(e);
                 alert("更新エラーが発生しました: " + e.message);
             }
         };
 
-        /* ■ Supabaseから「削除(DELETE)」リクエストを送る処理 ■ */
         window.deleteCurrentData = async () => {
             if (!currentTargetItem) return;
 
@@ -566,7 +559,6 @@
             if (!check) return;
 
             try {
-                // データベース(coordsテーブル)から削除
                 const { error } = await _supabase
                     .from('coords')
                     .delete()
@@ -576,7 +568,7 @@
 
                 alert("削除しました。");
                 closeModal();
-                loadData(); // 一覧のデータを再読み込み
+                loadData(); 
             } catch (e) {
                 console.error(e);
                 alert("削除エラーが発生しました: " + e.message);
