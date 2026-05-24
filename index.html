@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (Supabaseカテゴリ選択版)</title>
+    <title>コーデ管理ページ (ボタン画像化版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 15px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
@@ -26,7 +26,7 @@
         .btn-main { padding: 12px; width: 100%; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
         .btn-main:hover { background-color: #e64d7f; }
 
-        /* ■ 新設：種類を選択するボタンのグリッド ■ */
+        /* ■ 画像付き種類ボタンのスタイル ■ */
         .category-selector {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -34,46 +34,64 @@
             margin-bottom: 20px;
         }
         .category-btn {
-            padding: 20px 10px;
-            font-size: 1.1em;
+            position: relative;
+            height: 90px; /* ボタンの高さ */
+            font-size: 1.2em;
             font-weight: bold;
-            border: 2px solid #ff99cc;
-            background-color: #fff;
-            color: #ff6699;
+            color: white;
+            border: 2px solid #ddd;
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .category-btn:hover {
-            background-color: #fff0f5;
+        /* 文字を読みやすくするための黒いモヤ（オーバーレイ） */
+        .category-btn::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4); /* 暗さの調整。数値を上げると暗くなります */
+            transition: background 0.2s;
+            z-index: 1;
+        }
+        /* ボタン内のテキスト用 */
+        .category-btn span {
+            position: relative;
+            z-index: 2;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8); /* 文字の影 */
         }
         /* 選択されているボタンのスタイル */
         .category-btn.selected {
-            background-color: #ff6699;
-            color: #fff;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+            border: 3px solid #ff6699;
+            box-shadow: 0 0 10px rgba(255, 102, 153, 0.5);
+        }
+        .category-btn.selected::before {
+            background: rgba(255, 102, 153, 0.4); /* 選択時はピンクっぽいモヤに */
         }
 
         /* ■ スマホ3列表示のレスポンシブ設定 ■ */
         .gallery { 
             display: grid; 
-            grid-template-columns: repeat(3, 1fr); /* デフォルト3列（スマホ） */
+            grid-template-columns: repeat(3, 1fr); 
             gap: 8px; 
         }
         @media (min-width: 600px) {
             .gallery { 
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* PCはカード形式 */
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
                 gap: 15px; 
             }
         }
 
         .card { border: 1px solid #eee; padding: 5px; border-radius: 6px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; cursor: pointer; }
-        
-        /* 正方形表示 */
         .img-container { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 4px; background-color: #f0f0f0; position: relative; }
         .img-container img { width: 100%; height: 100%; object-fit: cover; }
-        
         .tags { font-size: 0.65em; color: #666; line-height: 1.2; margin-top: 4px; overflow: hidden; }
         .coord-title { font-size: 0.85em; font-weight: bold; color: #333; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dashed #eee; margin-bottom: 2px; }
 
@@ -82,9 +100,7 @@
         .modal-content { background: transparent; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: 8px; position: relative; }
         .modal-imgs { display: flex; flex-direction: column; gap: 10px; align-items: center; }
         .modal-imgs img { max-width: 100%; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        
         .btn-modal-close { display: block; width: 33.33%; margin: 20px auto 0; padding: 12px; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-align: center; }
-        
         .loading { display: none; color: #ff6699; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
 </head>
@@ -98,12 +114,12 @@
     <section id="page-list" class="page-section active">
         <h2>検索・一覧</h2>
         
-        <!-- ■ 4つの種類切り替えボタンを追加 ■ -->
+        <!-- ■ ボタンの中に <span> を配置するように変更 ■ -->
         <div class="category-selector">
-            <button class="category-btn" onclick="selectCategory('コーデ', this)">コーデ</button>
-            <button class="category-btn" onclick="selectCategory('フレカ', this)">フレカ</button>
-            <button class="category-btn" onclick="selectCategory('チャンスQR', this)">チャンス</button>
-            <button class="category-btn" onclick="selectCategory('セーブコード', this)">セーブ</button>
+            <button class="category-btn" id="btn-coorde" onclick="selectCategory('コーデ', this)"><span>コーデ</span></button>
+            <button class="category-btn" id="btn-friend" onclick="selectCategory('フレカ', this)"><span>フレカ</span></button>
+            <button class="category-btn" id="btn-chance" onclick="selectCategory('チャンスQR', this)"><span>チャンス</span></button>
+            <button class="category-btn" id="btn-save" onclick="selectCategory('セーブコード', this)"><span>セーブ</span></button>
         </div>
 
         <div class="container" id="searchContainer" style="padding: 10px; display: none;">
@@ -150,8 +166,17 @@
         const SUPABASE_KEY = 'sb_publishable_HFDc1M1YzKa8BBY37GCFIw_ICqRYEPp';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // ★★★ 【重要】ボタン用画像のURL指定 ★★★
+        // GitHubに保存した画像のパス、またはURLをここに設定してください。
+        // 同じフォルダ内（ルート）に置く場合は './coorde.jpg' のような書き方でも動きます。
+        document.getElementById('btn-coorde').style.backgroundImage = "url('./coorde.jpg')";
+        document.getElementById('btn-friend').style.backgroundImage = "url('./friend.jpg')";
+        document.getElementById('btn-chance').style.backgroundImage = "url('./chance.jpg')";
+        document.getElementById('btn-save').style.backgroundImage = "url('./save.jpg')";
+
+
         let allData = [];
-        let currentCategory = ""; // 現在選択されている「種類」を保持する変数
+        let currentCategory = ""; 
 
         // データ読み込み
         async function loadData() {
@@ -164,48 +189,33 @@
                 console.error("データ取得エラー:", error);
             } else {
                 allData = data;
-                // 初期状態では何も選択されていないのでギャラリーは空。
-                // もし最初からどれかを選んでおきたい場合はここに selectCategory('コーデ') などを入れます。
                 filterImages();
             }
         }
 
-        /* ■ ボタンが押された時の処理 ■ */
         window.selectCategory = (categoryName, buttonElement) => {
-            // すべてのカテゴリーボタンから selected クラスを外す
             document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
-            
-            // クリックされたボタンに selected クラスをつける
             if (buttonElement) {
                 buttonElement.classList.add('selected');
             }
-
             currentCategory = categoryName;
-            
-            // カテゴリが選ばれたら検索バーを表示する
             document.getElementById('searchContainer').style.display = 'block';
-            
-            // 画面を再描画
             filterImages();
         };
 
-        /* ■ AND検索 ＆ 種類絞り込みロジック ■ */
         window.filterImages = () => {
             const term = document.getElementById('searchInput').value.trim().toLowerCase();
             const gallery = document.getElementById('gallery');
             
-            // まだカテゴリボタンが押されていない場合は何も表示しない
             if (!currentCategory) {
                 gallery.innerHTML = "";
                 return;
             }
 
-            // 1. まず、選択された「種類」でデータを絞り込む
             let filtered = allData.filter(item => item.type === currentCategory);
 
-            // 2. 検索キーワードがある場合は、さらにAND検索で絞り込む
             if (term) {
-                const keywords = term.split(/\s+/); // 半角・全角スペースで分割
+                const keywords = term.split(/\s+/);
                 filtered = filtered.filter(item => {
                     const targetString = `${item.coordName} ${item.name}`.toLowerCase();
                     return keywords.every(key => targetString.includes(key));
@@ -251,14 +261,12 @@
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}_${i}.${fileExt}`;
                     
-                    // Storageへアップロード (imagesバケット)
                     const { data, error } = await _supabase.storage
                         .from('images')
                         .upload(fileName, file);
 
                     if (error) throw error;
 
-                    // 公開URLを取得
                     const { data: publicData } = _supabase.storage
                         .from('images')
                         .getPublicUrl(fileName);
@@ -266,7 +274,6 @@
                     imageUrls.push(publicData.publicUrl);
                 }
 
-                // Database(coordsテーブル)へ保存
                 const { error: dbError } = await _supabase
                     .from('coords')
                     .insert([{
@@ -321,7 +328,6 @@
             document.getElementById(`tabBtn-${tabName}`).classList.add('active');
         };
 
-        // 初期読み込み
         loadData();
     </script>
 </body>
