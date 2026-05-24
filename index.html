@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コーデ管理ページ (Supabase移行版)</title>
+    <title>コーデ管理ページ (Supabaseカテゴリ選択版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 15px; max-width: 800px; margin: 0 auto; background-color: #f9f9f9; padding-bottom: 80px;}
@@ -25,6 +25,35 @@
 
         .btn-main { padding: 12px; width: 100%; background-color: #ff6699; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.3s; margin-top: 20px; }
         .btn-main:hover { background-color: #e64d7f; }
+
+        /* ■ 新設：種類を選択するボタンのグリッド ■ */
+        .category-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .category-btn {
+            padding: 20px 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: 2px solid #ff99cc;
+            background-color: #fff;
+            color: #ff6699;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .category-btn:hover {
+            background-color: #fff0f5;
+        }
+        /* 選択されているボタンのスタイル */
+        .category-btn.selected {
+            background-color: #ff6699;
+            color: #fff;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+        }
 
         /* ■ スマホ3列表示のレスポンシブ設定 ■ */
         .gallery { 
@@ -68,9 +97,19 @@
 
     <section id="page-list" class="page-section active">
         <h2>検索・一覧</h2>
-        <div class="container" style="padding: 10px;">
-            <input type="text" id="searchInput" placeholder="検索 (例: りんりん フラワーマーチ)" oninput="filterImages()">
+        
+        <!-- ■ 4つの種類切り替えボタンを追加 ■ -->
+        <div class="category-selector">
+            <button class="category-btn" onclick="selectCategory('コーデ', this)">コーデ</button>
+            <button class="category-btn" onclick="selectCategory('フレカ', this)">フレカ</button>
+            <button class="category-btn" onclick="selectCategory('チャンスQR', this)">チャンス</button>
+            <button class="category-btn" onclick="selectCategory('セーブコード', this)">セーブ</button>
         </div>
+
+        <div class="container" id="searchContainer" style="padding: 10px; display: none;">
+            <input type="text" id="searchInput" placeholder="選択した種類の中から検索 (例: りんりん)" oninput="filterImages()">
+        </div>
+        
         <div id="gallery" class="gallery"></div>
     </section>
 
@@ -112,6 +151,7 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let allData = [];
+        let currentCategory = ""; // 現在選択されている「種類」を保持する変数
 
         // データ読み込み
         async function loadData() {
@@ -124,28 +164,53 @@
                 console.error("データ取得エラー:", error);
             } else {
                 allData = data;
+                // 初期状態では何も選択されていないのでギャラリーは空。
+                // もし最初からどれかを選んでおきたい場合はここに selectCategory('コーデ') などを入れます。
                 filterImages();
             }
         }
 
-        /* ■ AND検索ロジック (スペース区切り対応) ■ */
+        /* ■ ボタンが押された時の処理 ■ */
+        window.selectCategory = (categoryName, buttonElement) => {
+            // すべてのカテゴリーボタンから selected クラスを外す
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
+            
+            // クリックされたボタンに selected クラスをつける
+            if (buttonElement) {
+                buttonElement.classList.add('selected');
+            }
+
+            currentCategory = categoryName;
+            
+            // カテゴリが選ばれたら検索バーを表示する
+            document.getElementById('searchContainer').style.display = 'block';
+            
+            // 画面を再描画
+            filterImages();
+        };
+
+        /* ■ AND検索 ＆ 種類絞り込みロジック ■ */
         window.filterImages = () => {
             const term = document.getElementById('searchInput').value.trim().toLowerCase();
             const gallery = document.getElementById('gallery');
             
-            if (!term) {
-                renderGallery(allData);
+            // まだカテゴリボタンが押されていない場合は何も表示しない
+            if (!currentCategory) {
+                gallery.innerHTML = "";
                 return;
             }
 
-            const keywords = term.split(/\s+/); // 半角・全角スペースで分割
+            // 1. まず、選択された「種類」でデータを絞り込む
+            let filtered = allData.filter(item => item.type === currentCategory);
 
-            const filtered = allData.filter(item => {
-                // 検索対象の文字列（コーデ名 + なまえ）
-                const targetString = `${item.coordName} ${item.name}`.toLowerCase();
-                // すべてのキーワードが含まれているか (AND条件)
-                return keywords.every(key => targetString.includes(key));
-            });
+            // 2. 検索キーワードがある場合は、さらにAND検索で絞り込む
+            if (term) {
+                const keywords = term.split(/\s+/); // 半角・全角スペースで分割
+                filtered = filtered.filter(item => {
+                    const targetString = `${item.coordName} ${item.name}`.toLowerCase();
+                    return keywords.every(key => targetString.includes(key));
+                });
+            }
 
             renderGallery(filtered);
         };
